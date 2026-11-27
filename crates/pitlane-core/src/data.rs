@@ -80,12 +80,25 @@ pub struct SearchKey {
     pub hay: Box<str>,
     /// The same words, space separated, for whole-word bonuses.
     pub words: Box<str>,
-    /// Make + model only ("fordranger"): a query that only names the car, not an engine.
+    /// Make + model words, plus aliases ("chevrolet chevy silverado 1500"): a query whose words all
+    /// start one of these only names the car, not an engine.
     pub car: Box<str>,
+    /// The model glued together ("f150", "silverado1500").
+    pub model: Box<str>,
     /// Length of `hay` without the drivetrain words (used for the shorter-is-better ranking).
     pub base_len: u16,
     /// The same trim is also sold with another drivetrain (show it in result labels).
     pub multi_drive: bool,
+}
+
+/// Common nicknames for makes, searchable like the real name.
+fn make_aliases(make: &str) -> &'static str {
+    match make {
+        "Chevrolet" => "chevy",
+        "Volkswagen" => "vw",
+        "Mercedes-Benz" => "mercedes benz",
+        _ => "",
+    }
 }
 
 /// Searchable words for a drivetrain ("4wd 4x4", "awd", ...).
@@ -331,18 +344,23 @@ impl Db {
             for mi in 0..self.entries.len() {
                 let cars = self.load(mi);
                 for (ci, c) in cars.iter().enumerate() {
-                    let text = format!("{} {} {} {} {}", c.make, c.model, c.trim, c.generation, c.engine_code);
+                    let text = format!("{} {} {} {} {} {}", c.make, make_aliases(&c.make), c.model, c.trim, c.generation, c.engine_code);
                     let mut words: Vec<String> = text.split(|ch: char| !ch.is_alphanumeric()).map(crate::search::normalize).filter(|w| !w.is_empty()).collect();
                     let base_len = words.iter().map(|w| w.len()).sum::<usize>().min(u16::MAX as usize) as u16;
                     words.extend(drive_words(c.drivetrain).split(' ').map(str::to_string));
-                    let car = crate::search::normalize(&format!("{}{}", c.make, c.model));
+                    let car_words: Vec<String> = format!("{} {} {}", c.make, make_aliases(&c.make), c.model)
+                        .split(|ch: char| !ch.is_alphanumeric())
+                        .map(crate::search::normalize)
+                        .filter(|w| !w.is_empty())
+                        .collect();
                     let multi_drive = cars.iter().any(|o| o.id != c.id && o.model == c.model && o.generation == c.generation && o.trim == c.trim);
                     out.push(SearchKey {
                         make: mi as u16,
                         index: ci as u16,
                         hay: words.concat().into_boxed_str(),
                         words: words.join(" ").into_boxed_str(),
-                        car: car.into_boxed_str(),
+                        car: car_words.join(" ").into_boxed_str(),
+                        model: crate::search::normalize(&c.model).into_boxed_str(),
                         base_len,
                         multi_drive,
                     });

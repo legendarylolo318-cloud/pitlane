@@ -47,7 +47,8 @@ fn score_text(tokens: &[String], hay: &str, words: &str) -> Option<i32> {
             } else if words.split(' ').any(|w| w.starts_with(t.as_str())) {
                 total += 20;
             }
-        } else if t.len() >= 3 && is_subsequence(t, hay) {
+        } else if t.len() >= 3 && t.chars().any(|c| c.is_alphabetic()) && is_subsequence(t, hay) {
+            // typo-tolerant only for words: "454" must not match scattered digits
             total += 25;
         } else {
             return None;
@@ -85,7 +86,9 @@ pub fn search(db: &Db, query: &str, limit: usize) -> Vec<Hit> {
         // A query that only names the car ("ford ranger", "2005 ranger") gives one hit per car,
         // loaded with its first engine. Any word that only matches the engine/trim ("4.0",
         // "ecoboost", "type r") gives one hit per engine instead, so that engine gets picked.
-        let car_only = !tokens.is_empty() && db.search_keys().iter().any(|k| tokens.iter().all(|t| k.car.contains(t.as_str())));
+        // a token names the car when it starts a make/model word ("silver", "chevy") or the glued model ("f150")
+        let names_car = |k: &crate::data::SearchKey, t: &str| k.car.split(' ').any(|w| w.starts_with(t)) || k.model.starts_with(t);
+        let car_only = !tokens.is_empty() && db.search_keys().iter().any(|k| tokens.iter().all(|t| names_car(k, t)));
         let mut scored: Vec<(i32, u16, &Car, bool)> = Vec::new();
         for k in db.search_keys() {
             let Some(c) = db.car_at(k.make, k.index) else { continue };
@@ -96,7 +99,7 @@ pub fn search(db: &Db, query: &str, limit: usize) -> Vec<Hit> {
             }
             let Some(score) = score_text(&tokens, &k.hay, &k.words) else { continue };
             if car_only {
-                if !tokens.iter().all(|t| k.car.contains(t.as_str())) {
+                if !tokens.iter().all(|t| names_car(k, t)) {
                     continue;
                 }
                 scored.push((score, k.index, c, k.multi_drive));
@@ -203,6 +206,18 @@ mod tests {
         assert!(h.iter().any(|x| x.label.contains("R/T") && x.label.ends_with("AWD")), "{h:?}");
         let h = search(&db, "ranger ecoboost", 10);
         assert!(h.iter().all(|x| x.label.contains("EcoBoost")) && h.len() >= 4, "{h:?}");
+        // nicknames, partial model names, and engine words that hide inside other words ("ev" in "chevrolet")
+        let h = search(&db, "chevy silver", 10);
+        assert!(!h.is_empty() && h.iter().all(|x| x.label.contains("Chevrolet Silverado")), "{h:?}");
+        let h = search(&db, "2024 silverado ev", 5);
+        assert!(h[0].label.contains("Silverado EV"), "{h:?}");
+        let h = search(&db, "silverado 454", 5);
+        assert_eq!(h.len(), 1, "{h:?}");
+        assert!(h[0].label.contains("454 SS"), "{h:?}");
+        let h = search(&db, "2006 silverado duramax", 5);
+        assert_eq!(h[0].label, "2006 Chevrolet Silverado 2500 HD 6.6 Duramax LBZ · 4WD", "{h:?}");
+        let h = search(&db, "f150", 5);
+        assert!(h[0].label.contains("F-150"), "{h:?}");
         let h = search(&db, "ranger raptor", 10);
         assert_eq!(h[0].label, "2026 Ford Ranger Raptor 3.0 EcoBoost");
         let h = search(&db, "c8 z06", 5);

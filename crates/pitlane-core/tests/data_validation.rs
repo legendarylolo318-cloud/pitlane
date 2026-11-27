@@ -63,6 +63,15 @@ fn priority_models_exist() {
         assert!(has(mk, md), "missing {mk} {md}");
     }
     assert!(db.cars_of_make("Jeep").iter().any(|c| c.trim.contains("Trackhawk")));
+    // every Silverado 1500 and 2500 HD year, several engines each, 2WD and 4WD
+    for y in 1990..=2026 {
+        for model in ["Silverado 1500", "Silverado 2500 HD"] {
+            let trims = db.trims_for(y, "Chevrolet", model);
+            assert!(trims.len() >= 4, "{y} {model}: only {} cars", trims.len());
+            assert!(trims.iter().any(|c| c.drivetrain == Drivetrain::FourWD), "{y} {model}: no 4WD");
+            assert!(trims.iter().any(|c| c.drivetrain == Drivetrain::RWD), "{y} {model}: no 2WD");
+        }
+    }
     // every US-market Ranger year (not sold in the US 2012-2018)
     for y in (1990..=2011).chain(2019..=2026) {
         assert!(!db.trims_for(y, "Ford", "Ranger").is_empty(), "no Ford Ranger in {y}");
