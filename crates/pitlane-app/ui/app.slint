@@ -1,9 +1,18 @@
 import { ComboBox, Slider, LineEdit, TextEdit, ScrollView, Palette } from "std-widgets.slint";
 
+// Layout rules (all sizes are logical px = dp on Android):
+//  * every touch target is at least 48px tall (Android guideline);
+//  * phone   = shortest side < 520px: tabs (Build / Compare), swipeable cards in portrait;
+//  * tablet portrait / small window: tabs, full table;
+//  * wide    = width >= 840px: Build panel and comparison side by side;
+//  * the content is inset by the platform safe area (status/navigation bar, notch) and lifted
+//    above the on-screen keyboard.
+// Nothing animates or ticks while idle; the only animation is the card swipe, which runs only
+// while a page change is in progress.
+
 export struct SlotInfo { title: string, subtitle: string, modded: bool, color: color }
 export struct CellData { text: string, sub: string, best: bool, frac: float }
 export struct RowData { label: string, cells: [CellData] }
-export struct ChartData { title: string, bars: [CellData] }
 export struct ModRow {
     id: string, name: string, desc: string, enabled: bool,
     has-slider: bool, value: float, min: float, max: float, step: float,
@@ -29,12 +38,13 @@ export global Backend {
     in property <bool> is-fav;
     in property <[ModRow]> gain-mods;
     in property <[ModRow]> neg-mods;
-    in property <[string]> warnings;
     in property <[SlotInfo]> headers;
     in property <[RowData]> rows;
     in property <[RowData]> compact-rows;
-    in property <[ChartData]> charts;
+    // charts: label = chart title, cells = one bar per car
+    in property <[RowData]> charts;
     in property <[string]> search-hits;
+    in-out property <string> search-text;
     in property <[string]> favorites;
     in property <[SavedItem]> saved;
     in property <string> units-text;
@@ -45,6 +55,7 @@ export global Backend {
     in-out property <int> view-mode;
     in-out property <int> dialog;
     in-out property <string> export-text;
+    in-out property <int> export-kind;
     in-out property <string> overrides-text;
     in-out property <string> save-name;
     // edit-car form
@@ -62,6 +73,7 @@ export global Backend {
     in-out property <int> ed-asp;
     in-out property <int> ed-dt;
     in property <string> ed-heading;
+    in property <bool> ed-new;
     in property <bool> ed-can-reset;
     // loss settings (percent)
     in-out property <string> loss-2wd-man;
@@ -94,6 +106,7 @@ export global Backend {
     callback export-png();
     callback export-open(int);
     callback copy-export();
+    callback save-export();
     callback open-edit(bool);
     callback edit-save(bool);
     callback edit-reset();
@@ -104,18 +117,26 @@ export global Backend {
     callback clear-status();
 }
 
+global Ui {
+    out property <length> touch: 48px;
+}
+
 component PButton inherits Rectangle {
     in property <string> text;
     in property <bool> active: false;
     in property <color> dot: transparent;
     in property <length> font: 14px;
     callback clicked();
-    min-height: 44px;
+    min-height: Ui.touch;
+    min-width: Ui.touch;
     preferred-width: lbl.preferred-width + 28px + (root.dot == transparent ? 0px : 14px);
     border-radius: 8px;
     border-width: 1px;
     border-color: root.dot == transparent ? Palette.border : root.dot;
     background: root.active ? Palette.accent-background : (ta.pressed ? Palette.border : Palette.alternate-background);
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
     ta := TouchArea { clicked => { root.clicked(); } }
     HorizontalLayout {
         padding-left: 8px; padding-right: 8px; spacing: 6px; alignment: center;
@@ -142,7 +163,8 @@ component CompareTable inherits Rectangle {
     in property <[SlotInfo]> headers;
     in property <[RowData]> rows;
     in property <length> label-w: 120px;
-    property <length> col-w: max(96px, (root.width - root.label-w) / max(1, root.headers.length));
+    in property <length> min-col-w: 96px;
+    property <length> col-w: max(root.min-col-w, (root.width - root.label-w) / max(1, root.headers.length));
     preferred-height: col.preferred-height;
     col := VerticalLayout {
         spacing: 2px;
@@ -177,8 +199,10 @@ component CarCard inherits Rectangle {
     border-radius: 12px;
     border-width: 2px;
     border-color: root.info.color;
-    VerticalLayout {
+    preferred-height: v.preferred-height;
+    v := VerticalLayout {
         padding: 12px; spacing: 3px;
+        alignment: start;
         Text { text: root.info.title; font-size: 18px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
         Text { text: root.info.subtitle + (root.info.modded ? "  -  modded (est.)" : ""); font-size: 13px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
         for row in root.rows: HorizontalLayout {
@@ -189,6 +213,7 @@ component CarCard inherits Rectangle {
     }
 }
 
+// One card per car; swipe horizontally (or use the arrows) to page.
 component CardPager inherits Rectangle {
     in property <[SlotInfo]> headers;
     in property <[RowData]> rows;
@@ -196,13 +221,22 @@ component CardPager inherits Rectangle {
     property <length> drag: 0px;
     property <bool> dragging: false;
     property <int> count: root.headers.length;
-    height: 70px + root.rows.length * 40px + 56px;
-    VerticalLayout {
+    property <int> current: max(0, min(root.page, root.count - 1));
+    preferred-height: lay.preferred-height;
+    lay := VerticalLayout {
         spacing: 6px;
         Rectangle {
             clip: true;
+            // The invisible copy of the current card gives the pager its height, so long, wrapped
+            // rows are never cut off whatever the screen width. (min-height, because a ScrollView
+            // sizes its content from the minimum height.)
+            min-height: measure.preferred-height;
+            measure := CarCard {
+                x: 4px; width: parent.width - 8px; opacity: 0;
+                info: root.headers[root.current]; rows: root.rows; index: root.current;
+            }
             for h[i] in root.headers: CarCard {
-                x: (i - min(root.page, root.count - 1)) * parent.width + root.drag + 4px;
+                x: (i - root.current) * parent.width + root.drag + 4px;
                 y: 0px;
                 width: parent.width - 8px;
                 height: parent.height;
@@ -215,8 +249,8 @@ component CardPager inherits Rectangle {
                 }
                 pointer-event(e) => {
                     if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) {
-                        if (root.drag < -50px && root.page < root.count - 1) { root.page += 1; }
-                        else if (root.drag > 50px && root.page > 0) { root.page -= 1; }
+                        if (root.drag < -50px && root.current < root.count - 1) { root.page = root.current + 1; }
+                        else if (root.drag > 50px && root.current > 0) { root.page = root.current - 1; }
                         root.drag = 0px;
                         root.dragging = false;
                     }
@@ -224,34 +258,36 @@ component CardPager inherits Rectangle {
             }
         }
         HorizontalLayout {
-            height: 44px; spacing: 10px; alignment: center;
-            PButton { text: "<"; width: 54px; clicked => { if (root.page > 0) { root.page -= 1; } } }
+            height: Ui.touch; spacing: 10px; alignment: center;
+            PButton { text: "<"; width: 56px; clicked => { if (root.current > 0) { root.page = root.current - 1; } } }
             for h[i] in root.headers: Rectangle {
                 width: 20px;
-                Rectangle { width: 12px; height: 12px; border-radius: 6px; background: i == min(root.page, root.count - 1) ? h.color : h.color.with-alpha(0.3); }
+                Rectangle { width: 12px; height: 12px; border-radius: 6px; background: i == root.current ? h.color : h.color.with-alpha(0.3); }
             }
-            PButton { text: ">"; width: 54px; clicked => { if (root.page < root.count - 1) { root.page += 1; } } }
+            PButton { text: ">"; width: 56px; clicked => { if (root.current < root.count - 1) { root.page = root.current + 1; } } }
         }
     }
 }
 
+// Bar charts drawn with plain rectangles (no images, nothing re-rendered unless data changes).
 component Charts inherits Rectangle {
-    in property <[ChartData]> charts;
+    in property <[RowData]> charts;
     in property <[SlotInfo]> headers;
+    in property <length> value-w: 120px;
     preferred-height: v.preferred-height;
     v := VerticalLayout {
         spacing: 14px;
         for ch in root.charts: VerticalLayout {
             spacing: 4px;
-            Text { text: ch.title; font-weight: 700; font-size: 14px; color: Palette.foreground; }
-            for b[i] in ch.bars: HorizontalLayout {
+            Text { text: ch.label; font-weight: 700; font-size: 14px; wrap: word-wrap; color: Palette.foreground; }
+            for b[i] in ch.cells: HorizontalLayout {
                 spacing: 6px;
                 Rectangle { width: 26px; Text { text: "#" + (i + 1); font-size: 12px; vertical-alignment: center; color: root.headers[i].color; font-weight: 700; } }
                 Rectangle {
                     horizontal-stretch: 1; height: 22px; background: Palette.alternate-background; border-radius: 4px;
                     Rectangle { x: 0px; width: parent.width * max(0.03, b.frac); height: parent.height; border-radius: 4px; background: b.best ? #2e7d32 : root.headers[i].color.with-alpha(0.75); }
                 }
-                Rectangle { width: 120px; Text { text: b.text; font-size: 12px; horizontal-alignment: right; vertical-alignment: center; font-weight: b.best ? 700 : 400; color: Palette.foreground; } }
+                Rectangle { width: root.value-w; Text { width: parent.width; text: b.text; font-size: 12px; horizontal-alignment: right; vertical-alignment: center; overflow: elide; font-weight: b.best ? 700 : 400; color: Palette.foreground; } }
             }
         }
     }
@@ -264,27 +300,33 @@ component ModItem inherits Rectangle {
     background: m.enabled ? Palette.alternate-background : transparent;
     border-radius: 8px;
     preferred-height: v.preferred-height;
-    TouchArea { y: 0px; height: 46px; clicked => { root.toggled(!root.m.enabled); } }
+    TouchArea { y: 0px; height: Ui.touch + 4px; clicked => { root.toggled(!root.m.enabled); } }
     v := VerticalLayout {
-        padding: 6px; spacing: 4px;
+        padding: 4px; padding-left: 6px; padding-right: 6px; spacing: 4px;
         HorizontalLayout {
-            height: 34px; spacing: 10px;
+            height: Ui.touch; spacing: 10px;
             Rectangle {
-                width: 28px; height: 28px; y: 3px; border-radius: 6px; border-width: 2px; border-color: Palette.accent-background;
+                width: 28px; height: 28px; y: (parent.height - self.height) / 2; border-radius: 6px; border-width: 2px; border-color: Palette.accent-background;
                 background: root.m.enabled ? Palette.accent-background : transparent;
+                accessible-role: checkbox;
+                accessible-checkable: true;
+                accessible-checked: root.m.enabled;
+                accessible-label: root.m.name;
+                accessible-action-default => { root.toggled(!root.m.enabled); }
                 Text { text: root.m.enabled ? "✓" : ""; color: Palette.accent-foreground; horizontal-alignment: center; vertical-alignment: center; font-weight: 700; }
             }
             Text { text: root.m.name; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; font-weight: 600; font-size: 14px; color: Palette.foreground; }
         }
         if root.m.enabled: Text { text: root.m.desc; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
         if root.m.enabled && root.m.has-slider: HorizontalLayout {
-            spacing: 8px; height: 40px;
-            Text { text: root.m.slider-label; width: 90px; vertical-alignment: center; font-size: 12px; wrap: word-wrap; color: Palette.foreground; }
+            spacing: 8px; height: Ui.touch;
+            Text { text: root.m.slider-label; width: 84px; vertical-alignment: center; font-size: 12px; wrap: word-wrap; color: Palette.foreground; }
             Slider {
-                minimum: root.m.min; maximum: root.m.max; value: root.m.value; height: 40px;
+                minimum: root.m.min; maximum: root.m.max; value: root.m.value; step: root.m.step; height: Ui.touch;
+                horizontal-stretch: 1;
                 changed(v) => { root.changed(v); }
             }
-            Text { text: root.m.value-text; width: 84px; vertical-alignment: center; horizontal-alignment: right; font-size: 13px; font-weight: 700; color: Palette.foreground; }
+            Text { text: root.m.value-text; width: 76px; vertical-alignment: center; horizontal-alignment: right; font-size: 13px; font-weight: 700; color: Palette.foreground; }
         }
         if root.m.enabled && root.m.gain != "": Text { text: root.m.gain; font-size: 13px; wrap: word-wrap; color: #2e9b3a; }
         if root.m.warning != "": Text { text: root.m.warning; font-size: 12px; wrap: word-wrap; color: #d9822b; }
@@ -292,23 +334,46 @@ component ModItem inherits Rectangle {
 }
 
 component Section inherits Text {
-    font-size: 16px; font-weight: 700; color: Palette.foreground;
+    font-size: 16px; font-weight: 700; wrap: word-wrap; color: Palette.foreground;
+}
+
+component Caption inherits Text {
+    font-size: 12px; color: Palette.foreground.with-alpha(0.7);
 }
 
 component LabeledField inherits HorizontalLayout {
     in property <string> label;
     in-out property <string> value;
+    in property <InputType> kind: InputType.text;
+    in property <bool> read-only: false;
     spacing: 8px;
-    Text { text: root.label; width: 110px; vertical-alignment: center; font-size: 13px; color: Palette.foreground; }
-    LineEdit { text <=> root.value; height: 40px; horizontal-stretch: 1; }
+    Text { text: root.label; min-width: 72px; preferred-width: 120px; horizontal-stretch: 0; vertical-alignment: center; wrap: word-wrap; font-size: 13px; color: Palette.foreground; }
+    LineEdit { text <=> root.value; input-type: root.kind; read-only: root.read-only; height: Ui.touch; min-width: 64px; horizontal-stretch: 1; }
+}
+
+component Picker inherits VerticalLayout {
+    in property <string> label;
+    in property <[string]> model;
+    in-out property <int> current;
+    callback picked(int);
+    spacing: 2px;
+    Caption { text: root.label; }
+    ComboBox {
+        model: root.model; current-index <=> root.current; height: Ui.touch;
+        accessible-label: root.label;
+        selected => { root.picked(self.current-index); }
+    }
 }
 
 component BuildPanel inherits ScrollView {
+    in property <bool> two-column-pickers;
     VerticalLayout {
         padding: 12px; spacing: 10px;
         LineEdit {
             placeholder-text: "Search: 06 civic si, lx570, 99 supra ...";
-            height: 44px;
+            text <=> Backend.search-text;
+            input-type: InputType.search;
+            height: Ui.touch;
             edited(t) => { Backend.search-edited(t); }
         }
         for hit[i] in Backend.search-hits: PButton { text: hit; active: false; clicked => { Backend.search-pick(i); } }
@@ -317,26 +382,37 @@ component BuildPanel inherits ScrollView {
         HorizontalLayout {
             spacing: 6px;
             for s[i] in Backend.slots: PButton {
-                text: "#" + (i + 1); dot: s.color; active: i == Backend.selected; width: 64px;
+                text: "#" + (i + 1); dot: s.color; active: i == Backend.selected; min-width: 52px; horizontal-stretch: 1; max-width: 72px;
                 clicked => { Backend.select-slot(i); }
             }
-            if Backend.slots.length < 5: PButton { text: "+"; width: 54px; clicked => { Backend.add-slot(); } }
+            if Backend.slots.length < 5: PButton { text: "+"; width: 52px; clicked => { Backend.add-slot(); } }
+            Rectangle { horizontal-stretch: 0.01; }
         }
         Text { text: Backend.selected-title; font-size: 17px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
         HorizontalLayout {
             spacing: 6px;
-            PButton { text: "Duplicate"; clicked => { Backend.duplicate-slot(); } }
-            PButton { text: Backend.is-fav ? "★ Saved" : "☆ Favorite"; active: Backend.is-fav; clicked => { Backend.toggle-fav(); } }
-            PButton { text: "Remove"; clicked => { Backend.remove-slot(); } }
+            PButton { text: "Duplicate"; horizontal-stretch: 1; clicked => { Backend.duplicate-slot(); } }
+            PButton { text: Backend.is-fav ? "★ Saved" : "☆ Favorite"; active: Backend.is-fav; horizontal-stretch: 1; clicked => { Backend.toggle-fav(); } }
+            PButton { text: "Remove"; horizontal-stretch: 1; clicked => { Backend.remove-slot(); } }
         }
-        Text { text: "Year"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
-        ComboBox { model: Backend.years; current-index <=> Backend.year-index; height: 44px; selected => { Backend.year-picked(Backend.year-index); } }
-        Text { text: "Make"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
-        ComboBox { model: Backend.makes; current-index <=> Backend.make-index; height: 44px; selected => { Backend.make-picked(Backend.make-index); } }
-        Text { text: "Model"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
-        ComboBox { model: Backend.models; current-index <=> Backend.model-index; height: 44px; selected => { Backend.model-picked(Backend.model-index); } }
-        Text { text: "Trim / engine"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
-        ComboBox { model: Backend.trims; current-index <=> Backend.trim-index; height: 44px; selected => { Backend.trim-picked(Backend.trim-index); } }
+        if !root.two-column-pickers: VerticalLayout {
+            spacing: 8px;
+            Picker { label: "Year"; model: Backend.years; current <=> Backend.year-index; picked(i) => { Backend.year-picked(i); } }
+            Picker { label: "Make"; model: Backend.makes; current <=> Backend.make-index; picked(i) => { Backend.make-picked(i); } }
+            Picker { label: "Model"; model: Backend.models; current <=> Backend.model-index; picked(i) => { Backend.model-picked(i); } }
+            Picker { label: "Trim / engine"; model: Backend.trims; current <=> Backend.trim-index; picked(i) => { Backend.trim-picked(i); } }
+        }
+        if root.two-column-pickers: GridLayout {
+            spacing: 8px;
+            Row {
+                Picker { label: "Year"; model: Backend.years; current <=> Backend.year-index; picked(i) => { Backend.year-picked(i); } }
+                Picker { label: "Make"; model: Backend.makes; current <=> Backend.make-index; picked(i) => { Backend.make-picked(i); } }
+            }
+            Row {
+                Picker { label: "Model"; model: Backend.models; current <=> Backend.model-index; picked(i) => { Backend.model-picked(i); } }
+                Picker { label: "Trim / engine"; model: Backend.trims; current <=> Backend.trim-index; picked(i) => { Backend.trim-picked(i); } }
+            }
+        }
 
         Rectangle {
             background: Palette.alternate-background; border-radius: 8px;
@@ -359,8 +435,6 @@ component BuildPanel inherits ScrollView {
             toggled(on) => { Backend.mod-toggled(m.id, on); }
             changed(v) => { Backend.mod-value(m.id, v); }
         }
-        if Backend.warnings.length > 0: Section { text: "Warnings"; }
-        for w in Backend.warnings: Text { text: "⚠ " + w; font-size: 12px; wrap: word-wrap; color: #d9822b; }
         Text { text: Backend.data-note; font-size: 11px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.55); }
     }
 }
@@ -369,47 +443,53 @@ component ComparePanel inherits ScrollView {
     in property <bool> phone-portrait;
     in property <bool> phone-landscape;
     property <bool> cards: root.phone-portrait || (!root.phone-landscape && Backend.view-mode == 1);
-    property <length> min-table-w: 120px + max(1, Backend.headers.length) * 96px;
+    property <length> label-w: root.width < 420px ? 92px : 120px;
+    property <length> min-col-w: root.width < 420px ? 88px : 96px;
     VerticalLayout {
         padding: 12px; spacing: 12px;
         Text { text: "Modded numbers are estimates (est.). Best value per row is highlighted."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
         if root.cards: CardPager { headers: Backend.headers; rows: Backend.rows; }
-        if root.phone-portrait: Section { text: "Compact table"; }
-        if root.phone-portrait: ScrollView {
-            content-width: max(self.width, 80px + max(1, Backend.headers.length) * 96px);
-            height: 40px + Backend.compact-rows.length * 52px + 60px;
-            CompareTable { headers: Backend.headers; rows: Backend.compact-rows; label-w: 80px; }
+        if root.phone-portrait && Backend.headers.length > 1: Section { text: "Side by side"; }
+        if root.phone-portrait && Backend.headers.length > 1: ScrollView {
+            content-width: max(self.visible-width, 80px + max(1, Backend.headers.length) * 88px);
+            min-height: compact.preferred-height;
+            compact := CompareTable { width: parent.content-width; headers: Backend.headers; rows: Backend.compact-rows; label-w: 80px; min-col-w: 88px; }
         }
         if !root.cards: ScrollView {
-            content-width: max(self.width, root.min-table-w);
-            height: 70px + Backend.rows.length * 50px;
-            CompareTable { headers: Backend.headers; rows: Backend.rows; }
+            content-width: max(self.visible-width, root.label-w + max(1, Backend.headers.length) * root.min-col-w);
+            min-height: full.preferred-height;
+            full := CompareTable { width: parent.content-width; headers: Backend.headers; rows: Backend.rows; label-w: root.label-w; min-col-w: root.min-col-w; }
         }
         Section { text: "Charts"; }
-        Charts { charts: Backend.charts; headers: Backend.headers; }
+        Charts { charts: Backend.charts; headers: Backend.headers; value-w: root.width < 420px ? 96px : 120px; }
     }
 }
 
 component DialogFrame inherits Rectangle {
     in property <string> title;
+    in property <length> pad-bottom: 0px;
     callback close();
     background: #000000a0;
     TouchArea { clicked => { root.close(); } }
     Rectangle {
-        width: min(parent.width - 24px, 560px);
-        height: min(parent.height - 24px, 720px);
+        property <length> margin: root.width < 520px ? 8px : 24px;
+        width: min(parent.width - 2 * self.margin, 600px);
+        height: min(parent.height - 2 * self.margin - root.pad-bottom, 760px);
+        y: (parent.height - root.pad-bottom - self.height) / 2;
         background: Palette.background; border-radius: 12px; border-width: 1px; border-color: Palette.border;
         TouchArea { }
         VerticalLayout {
             padding: 12px; spacing: 8px;
             HorizontalLayout {
-                height: 44px; spacing: 8px;
-                Text { text: root.title; font-size: 18px; font-weight: 700; vertical-alignment: center; horizontal-stretch: 1; color: Palette.foreground; }
-                PButton { text: "Close"; width: 80px; clicked => { root.close(); } }
+                height: Ui.touch; spacing: 8px;
+                Text { text: root.title; font-size: 18px; font-weight: 700; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; color: Palette.foreground; }
+                PButton { text: "Close"; width: 84px; clicked => { root.close(); } }
             }
             if Backend.status != "": Text { text: Backend.status; font-size: 12px; wrap: word-wrap; color: #d9822b; }
             ScrollView {
                 vertical-stretch: 1;
+                // never scroll sideways: content always fits the dialog width
+                content-width: self.visible-width;
                 VerticalLayout {
                     spacing: 8px;
                     @children
@@ -428,29 +508,51 @@ export component MainWindow inherits Window {
     preferred-height: 760px;
     background: Palette.background;
     in-out property <int> tab: 0;
-    property <bool> phone: min(root.width, root.height) < 500px;
-    property <bool> wide: !root.phone && root.width >= 900px;
-    property <bool> phone-portrait: root.phone && root.height > root.width;
-    property <bool> phone-landscape: root.phone && root.width >= root.height;
+    // insets: system bars / notch, plus the on-screen keyboard when it is up
+    property <length> inset-top: root.safe-area-insets.top;
+    property <length> inset-left: root.safe-area-insets.left;
+    property <length> inset-right: root.safe-area-insets.right;
+    property <length> inset-bottom: max(root.safe-area-insets.bottom, root.virtual-keyboard-size.height);
+    property <length> avail-w: root.width - root.inset-left - root.inset-right;
+    property <length> avail-h: root.height - root.inset-top - root.inset-bottom;
+    property <bool> phone: min(root.avail-w, root.avail-h) < 520px;
+    property <bool> wide: root.avail-w >= 840px && !(root.phone && root.avail-h < 420px);
+    property <bool> phone-portrait: root.phone && root.avail-h > root.avail-w;
+    property <bool> phone-landscape: root.phone && root.avail-w >= root.avail-h;
+    property <length> build-w: clamp(root.avail-w * 0.38, 360px, 460px);
+
+    // Return keyboard focus to the root after a dialog or tab change so Escape / Android Back keep working.
+    property <int> dialog-watch: Backend.dialog;
+    property <int> tab-watch: root.tab;
+    changed dialog-watch => { fs.focus(); }
+    changed tab-watch => { fs.focus(); }
 
     fs := FocusScope {
         x: 0px; y: 0px; width: root.width; height: root.height;
         init => { self.focus(); }
+        // Key events from focused children (LineEdit, ComboBox ...) bubble up here when unhandled.
         key-pressed(e) => {
-            if (e.text == Key.Escape) {
+            if (e.text == Key.Escape || e.text == Key.Back) {
                 if (Backend.dialog != 0) { Backend.dialog = 0; return accept; }
+                if (Backend.search-hits.length > 0) { Backend.search-text = ""; Backend.search-edited(""); return accept; }
                 if (root.tab != 0 && !root.wide) { root.tab = 0; return accept; }
             }
+            // unhandled Back at the top level falls through to Android (leaves the app)
             reject
         }
+
         VerticalLayout {
+            padding-top: root.inset-top;
+            padding-left: root.inset-left;
+            padding-right: root.inset-right;
+            padding-bottom: root.inset-bottom;
             // header + toolbar
             Rectangle {
                 background: Palette.alternate-background;
                 preferred-height: hv.preferred-height;
                 hv := VerticalLayout {
                     padding: 8px; spacing: 6px;
-                    HorizontalLayout {
+                    if !root.phone-landscape: HorizontalLayout {
                         spacing: 8px;
                         Text { text: "Pitlane"; font-size: 20px; font-weight: 800; vertical-alignment: center; color: Palette.accent-background; }
                         Text { text: Backend.status; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; color: Palette.foreground.with-alpha(0.75); }
@@ -462,8 +564,12 @@ export component MainWindow inherits Window {
                         PButton { text: Backend.power-text; horizontal-stretch: 1; clicked => { Backend.cycle-power(); } }
                         PButton { text: Backend.wheel-text; horizontal-stretch: 1; clicked => { Backend.toggle-wheel(); } }
                         if !root.phone: PButton { text: Backend.view-mode == 0 ? "Table" : "Cards"; horizontal-stretch: 1; clicked => { Backend.view-mode = 1 - Backend.view-mode; } }
+                        // landscape phones get one compact header row
+                        if root.phone-landscape && !root.wide: PButton { text: "Build"; active: root.tab == 0; horizontal-stretch: 1; clicked => { root.tab = 0; } }
+                        if root.phone-landscape && !root.wide: PButton { text: "Compare"; active: root.tab == 1; horizontal-stretch: 1; clicked => { root.tab = 1; } }
+                        if root.phone-landscape: PButton { text: "Menu"; width: 76px; clicked => { Backend.dialog = 6; } }
                     }
-                    if !root.wide: HorizontalLayout {
+                    if !root.wide && !root.phone-landscape: HorizontalLayout {
                         spacing: 6px;
                         PButton { text: "Build"; active: root.tab == 0; horizontal-stretch: 1; clicked => { root.tab = 0; } }
                         PButton { text: "Compare"; active: root.tab == 1; horizontal-stretch: 1; clicked => { root.tab = 1; } }
@@ -472,89 +578,100 @@ export component MainWindow inherits Window {
             }
             if root.wide: HorizontalLayout {
                 vertical-stretch: 1;
-                BuildPanel { width: 420px; }
+                BuildPanel { width: root.build-w; two-column-pickers: false; }
                 Rectangle { width: 1px; background: Palette.border; }
                 ComparePanel { horizontal-stretch: 1; phone-portrait: false; phone-landscape: false; }
             }
-            if !root.wide && root.tab == 0: BuildPanel { vertical-stretch: 1; }
+            if !root.wide && root.tab == 0: BuildPanel { vertical-stretch: 1; two-column-pickers: root.avail-w >= 600px; }
             if !root.wide && root.tab == 1: ComparePanel { vertical-stretch: 1; phone-portrait: root.phone-portrait; phone-landscape: root.phone-landscape; }
         }
-    }
 
-    // ---------------- dialogs ----------------
-    if Backend.dialog == 6: DialogFrame {
-        width: root.width; height: root.height; title: "Menu"; close => { Backend.dialog = 0; }
-        PButton { text: "Favorites & saved comparisons"; clicked => { Backend.dialog = 1; } }
-        PButton { text: "Export / share this comparison"; clicked => { Backend.export-open(0); } }
-        PButton { text: "Edit this car's stats"; clicked => { Backend.open-edit(false); } }
-        PButton { text: "Add a custom car"; clicked => { Backend.open-edit(true); } }
-        PButton { text: "Import / export my overrides"; clicked => { Backend.overrides-open(); } }
-        PButton { text: "Drivetrain loss settings"; clicked => { Backend.dialog = 5; } }
-        Text { text: "Pitlane - figures are approximate; see the data accuracy notes in the README."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
-    }
-    if Backend.dialog == 1: DialogFrame {
-        width: root.width; height: root.height; title: "Favorites & saved"; close => { Backend.dialog = 0; }
-        Section { text: "Save current comparison"; }
-        HorizontalLayout {
-            spacing: 8px;
-            LineEdit { text <=> Backend.save-name; placeholder-text: "Name"; height: 44px; horizontal-stretch: 1; }
-            PButton { text: "Save"; width: 80px; clicked => { Backend.save-comparison(); } }
+        // ---------------- dialogs (inside the FocusScope so Back/Escape reach it) ----------------
+        if Backend.dialog == 6: DialogFrame {
+            x: root.inset-left; y: root.inset-top; width: root.avail-w; height: root.height - root.inset-top; pad-bottom: root.inset-bottom;
+            title: "Menu"; close => { Backend.dialog = 0; }
+            PButton { text: "Favorites & saved comparisons"; clicked => { Backend.dialog = 1; } }
+            PButton { text: "Export / share this comparison"; clicked => { Backend.export-open(0); } }
+            PButton { text: "Edit this car's stats"; clicked => { Backend.open-edit(false); } }
+            PButton { text: "Add a custom car"; clicked => { Backend.open-edit(true); } }
+            PButton { text: "Import / export my overrides"; clicked => { Backend.overrides-open(); } }
+            PButton { text: "Drivetrain loss settings"; clicked => { Backend.dialog = 5; } }
+            Text { text: "Pitlane - figures are approximate; see the data accuracy notes in the README."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
         }
-        Section { text: "Saved comparisons"; }
-        for s[i] in Backend.saved: HorizontalLayout {
-            spacing: 6px;
-            PButton { text: s.name + "  -  " + s.detail; horizontal-stretch: 1; clicked => { Backend.load-saved(i); } }
-            PButton { text: "Delete"; width: 80px; clicked => { Backend.delete-saved(i); } }
+        if Backend.dialog == 1: DialogFrame {
+            x: root.inset-left; y: root.inset-top; width: root.avail-w; height: root.height - root.inset-top; pad-bottom: root.inset-bottom;
+            title: "Favorites & saved"; close => { Backend.dialog = 0; }
+            Section { text: "Save current comparison"; }
+            HorizontalLayout {
+                spacing: 8px;
+                LineEdit { text <=> Backend.save-name; placeholder-text: "Name"; height: Ui.touch; horizontal-stretch: 1; }
+                PButton { text: "Save"; width: 80px; clicked => { Backend.save-comparison(); } }
+            }
+            Section { text: "Saved comparisons"; }
+            for s[i] in Backend.saved: HorizontalLayout {
+                spacing: 6px;
+                PButton { text: s.name + "  -  " + s.detail; horizontal-stretch: 1; clicked => { Backend.load-saved(i); } }
+                PButton { text: "Delete"; width: 80px; clicked => { Backend.delete-saved(i); } }
+            }
+            if Backend.saved.length == 0: Text { text: "None yet."; color: Palette.foreground.with-alpha(0.6); }
+            Section { text: "Favorite cars (tap to load into the selected slot)"; }
+            for f[i] in Backend.favorites: PButton { text: f; clicked => { Backend.pick-fav(i); } }
+            if Backend.favorites.length == 0: Text { text: "None yet - use the star on the Build screen."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.6); }
         }
-        if Backend.saved.length == 0: Text { text: "None yet."; color: Palette.foreground.with-alpha(0.6); }
-        Section { text: "Favorite cars (tap to load into the selected slot)"; }
-        for f[i] in Backend.favorites: PButton { text: f; clicked => { Backend.pick-fav(i); } }
-        if Backend.favorites.length == 0: Text { text: "None yet - use the star on the Build screen."; color: Palette.foreground.with-alpha(0.6); }
-    }
-    if Backend.dialog == 2: DialogFrame {
-        width: root.width; height: root.height; title: "Export / share"; close => { Backend.dialog = 0; }
-        HorizontalLayout {
-            spacing: 6px;
-            PButton { text: "Text"; horizontal-stretch: 1; clicked => { Backend.export-open(0); } }
-            PButton { text: "CSV"; horizontal-stretch: 1; clicked => { Backend.export-open(1); } }
-            PButton { text: "PNG"; horizontal-stretch: 1; clicked => { Backend.export-png(); } }
+        if Backend.dialog == 2: DialogFrame {
+            x: root.inset-left; y: root.inset-top; width: root.avail-w; height: root.height - root.inset-top; pad-bottom: root.inset-bottom;
+            title: "Export / share"; close => { Backend.dialog = 0; }
+            HorizontalLayout {
+                spacing: 6px;
+                PButton { text: "Text"; active: Backend.export-kind == 0; horizontal-stretch: 1; clicked => { Backend.export-open(0); } }
+                PButton { text: "CSV"; active: Backend.export-kind == 1; horizontal-stretch: 1; clicked => { Backend.export-open(1); } }
+                PButton { text: "PNG"; horizontal-stretch: 1; clicked => { Backend.export-png(); } }
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                PButton { text: "Copy to clipboard"; horizontal-stretch: 1; clicked => { Backend.copy-export(); } }
+                PButton { text: "Save file"; horizontal-stretch: 1; clicked => { Backend.save-export(); } }
+            }
+            TextEdit { text <=> Backend.export-text; read-only: true; height: 360px; font-size: 12px; }
         }
-        PButton { text: "Copy to clipboard"; clicked => { Backend.copy-export(); } }
-        TextEdit { text <=> Backend.export-text; read-only: true; height: 360px; font-size: 12px; }
-    }
-    if Backend.dialog == 3: DialogFrame {
-        width: root.width; height: root.height; title: Backend.ed-heading; close => { Backend.dialog = 0; }
-        LabeledField { label: "Make"; value <=> Backend.ed-make; }
-        LabeledField { label: "Model"; value <=> Backend.ed-model; }
-        LabeledField { label: "Trim"; value <=> Backend.ed-trim; }
-        LabeledField { label: "Year (1990-2026)"; value <=> Backend.ed-year; }
-        LabeledField { label: "Displacement (L)"; value <=> Backend.ed-disp; }
-        LabeledField { label: "Cylinders"; value <=> Backend.ed-cyl; }
-        HorizontalLayout { spacing: 8px; Text { text: "Aspiration"; width: 110px; vertical-alignment: center; font-size: 13px; color: Palette.foreground; } ComboBox { model: ["NA", "Turbo", "Supercharged", "Hybrid", "EV"]; current-index <=> Backend.ed-asp; height: 40px; horizontal-stretch: 1; } }
-        HorizontalLayout { spacing: 8px; Text { text: "Drivetrain"; width: 110px; vertical-alignment: center; font-size: 13px; color: Palette.foreground; } ComboBox { model: ["FWD", "RWD", "AWD", "4WD"]; current-index <=> Backend.ed-dt; height: 40px; horizontal-stretch: 1; } }
-        LabeledField { label: "Horsepower (crank)"; value <=> Backend.ed-hp; }
-        LabeledField { label: "Torque (lb-ft)"; value <=> Backend.ed-tq; }
-        LabeledField { label: "0-60 mph (s)"; value <=> Backend.ed-zs; }
-        LabeledField { label: "Curb weight (lb)"; value <=> Backend.ed-weight; }
-        LabeledField { label: "Redline (rpm, 0=?)"; value <=> Backend.ed-rl; }
-        PButton { text: "Save as override of this car"; clicked => { Backend.edit-save(false); } }
-        PButton { text: "Save as a new custom car"; clicked => { Backend.edit-save(true); } }
-        if Backend.ed-can-reset: PButton { text: "Remove my override (back to bundled data)"; clicked => { Backend.edit-reset(); } }
-    }
-    if Backend.dialog == 4: DialogFrame {
-        width: root.width; height: root.height; title: "Overrides import / export"; close => { Backend.dialog = 0; }
-        Text { text: "Your edits and custom cars (RON text). Copy it to back it up, or paste text below and tap Import."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-        HorizontalLayout { spacing: 6px; PButton { text: "Copy"; horizontal-stretch: 1; clicked => { Backend.overrides-copy(); } } PButton { text: "Import (replace)"; horizontal-stretch: 1; clicked => { Backend.overrides-import(); } } }
-        TextEdit { text <=> Backend.overrides-text; height: 380px; font-size: 12px; }
-    }
-    if Backend.dialog == 5: DialogFrame {
-        width: root.width; height: root.height; title: "Drivetrain loss (%)"; close => { Backend.dialog = 0; }
-        Text { text: "Used when 'Wheel' power is selected. Defaults: 12 / 15 / 18 / 20 / 8."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-        LabeledField { label: "FWD/RWD manual"; value <=> Backend.loss-2wd-man; }
-        LabeledField { label: "FWD/RWD auto"; value <=> Backend.loss-2wd-auto; }
-        LabeledField { label: "AWD/4WD manual"; value <=> Backend.loss-awd-man; }
-        LabeledField { label: "AWD/4WD auto"; value <=> Backend.loss-awd-auto; }
-        LabeledField { label: "EV"; value <=> Backend.loss-ev; }
-        PButton { text: "Apply"; clicked => { Backend.settings-save(); } }
+        if Backend.dialog == 3: DialogFrame {
+            x: root.inset-left; y: root.inset-top; width: root.avail-w; height: root.height - root.inset-top; pad-bottom: root.inset-bottom;
+            title: Backend.ed-heading; close => { Backend.dialog = 0; }
+            if !Backend.ed-new: Text { text: "Make, model and year are fixed for an override; use 'Add a custom car' to change them."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+            LabeledField { label: "Make"; value <=> Backend.ed-make; read-only: !Backend.ed-new; }
+            LabeledField { label: "Model"; value <=> Backend.ed-model; read-only: !Backend.ed-new; }
+            LabeledField { label: "Trim"; value <=> Backend.ed-trim; }
+            LabeledField { label: "Year (1990-2026)"; value <=> Backend.ed-year; kind: InputType.number; read-only: !Backend.ed-new; }
+            LabeledField { label: "Displacement (L)"; value <=> Backend.ed-disp; kind: InputType.decimal; }
+            LabeledField { label: "Cylinders"; value <=> Backend.ed-cyl; kind: InputType.number; }
+            HorizontalLayout { spacing: 8px; Text { text: "Aspiration"; min-width: 72px; preferred-width: 120px; horizontal-stretch: 0; vertical-alignment: center; font-size: 13px; color: Palette.foreground; } ComboBox { model: ["NA", "Turbo", "Supercharged", "Hybrid", "EV"]; current-index <=> Backend.ed-asp; height: Ui.touch; horizontal-stretch: 1; } }
+            HorizontalLayout { spacing: 8px; Text { text: "Drivetrain"; min-width: 72px; preferred-width: 120px; horizontal-stretch: 0; vertical-alignment: center; font-size: 13px; color: Palette.foreground; } ComboBox { model: ["FWD", "RWD", "AWD", "4WD"]; current-index <=> Backend.ed-dt; height: Ui.touch; horizontal-stretch: 1; } }
+            LabeledField { label: "Horsepower (crank)"; value <=> Backend.ed-hp; kind: InputType.number; }
+            LabeledField { label: "Torque (lb-ft)"; value <=> Backend.ed-tq; kind: InputType.number; }
+            LabeledField { label: "0-60 mph (s)"; value <=> Backend.ed-zs; kind: InputType.decimal; }
+            LabeledField { label: "Curb weight (lb)"; value <=> Backend.ed-weight; kind: InputType.number; }
+            LabeledField { label: "Redline (rpm, 0=?)"; value <=> Backend.ed-rl; kind: InputType.number; }
+            if !Backend.ed-new: PButton { text: "Save as override of this car"; clicked => { Backend.edit-save(false); } }
+            PButton { text: "Save as a new custom car"; clicked => { Backend.edit-save(true); } }
+            if Backend.ed-can-reset: PButton { text: "Remove my override (back to bundled data)"; clicked => { Backend.edit-reset(); } }
+        }
+        if Backend.dialog == 4: DialogFrame {
+            x: root.inset-left; y: root.inset-top; width: root.avail-w; height: root.height - root.inset-top; pad-bottom: root.inset-bottom;
+            title: "Overrides import / export"; close => { Backend.dialog = 0; }
+            Text { text: "Your edits and custom cars (RON text). Copy it to back it up, or paste text below and tap Import."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+            HorizontalLayout { spacing: 6px; PButton { text: "Copy"; horizontal-stretch: 1; clicked => { Backend.overrides-copy(); } } PButton { text: "Import (replace)"; horizontal-stretch: 1; clicked => { Backend.overrides-import(); } } }
+            TextEdit { text <=> Backend.overrides-text; height: 380px; font-size: 12px; }
+        }
+        if Backend.dialog == 5: DialogFrame {
+            x: root.inset-left; y: root.inset-top; width: root.avail-w; height: root.height - root.inset-top; pad-bottom: root.inset-bottom;
+            title: "Drivetrain loss (%)"; close => { Backend.dialog = 0; }
+            Text { text: "Used when 'Wheel' power is selected. Defaults: 12 / 15 / 18 / 20 / 8."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+            LabeledField { label: "FWD/RWD manual"; value <=> Backend.loss-2wd-man; kind: InputType.decimal; }
+            LabeledField { label: "FWD/RWD auto"; value <=> Backend.loss-2wd-auto; kind: InputType.decimal; }
+            LabeledField { label: "AWD/4WD manual"; value <=> Backend.loss-awd-man; kind: InputType.decimal; }
+            LabeledField { label: "AWD/4WD auto"; value <=> Backend.loss-awd-auto; kind: InputType.decimal; }
+            LabeledField { label: "EV"; value <=> Backend.loss-ev; kind: InputType.decimal; }
+            PButton { text: "Apply"; clicked => { Backend.settings-save(); } }
+        }
     }
 }

@@ -138,7 +138,7 @@ fn parse_blob(blob: &'static [u8]) -> Option<(Bundled, Vec<MakeEntry>)> {
     let cars = r.u32()? as usize;
     let records = r.take(cars.checked_mul(CAR_RECORD_LEN)?)?;
     // Validate every reference once, so decoding can index without checks failing later.
-    for rec in records.chunks_exact(CAR_RECORD_LEN) {
+    for rec in records.as_chunks::<CAR_RECORD_LEN>().0 {
         for k in 0..8 {
             str_at(le16(rec, k * 2))?;
         }

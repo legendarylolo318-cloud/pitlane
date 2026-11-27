@@ -15,11 +15,14 @@ name = "pitlane"
 path = "src/main.rs"
 
 [features]
-default = ["renderer-femtovg"]
-# GPU-accelerated default renderer
-renderer-femtovg = ["slint/renderer-femtovg"]
-# CPU renderer (e.g. `cargo build --release --no-default-features --features renderer-software`)
+# Desktop default: Slint's CPU renderer. A full 1100x760 redraw takes ~1 ms, it needs no GPU
+# context (0 VRAM instead of ~75 MB) and halves resident memory. See README "Renderer".
+default = ["renderer-software"]
 renderer-software = ["slint/renderer-software"]
+# GPU renderer (OpenGL / GLES). Used for the Android APK, where full-screen scrolling at phone
+# resolutions on slower cores is smoother on the GPU:
+#   cargo apk build --release -p pitlane-app --lib --no-default-features --features renderer-femtovg
+renderer-femtovg = ["slint/renderer-femtovg"]
 
 [dependencies]
 pitlane-core = { path = "../pitlane-core" }
@@ -47,3 +50,7 @@ target_sdk_version = 34
 
 [package.metadata.android.application]
 label = "Pitlane"
+
+[[example]]
+name = "snap"
+required-features = ["renderer-software"]

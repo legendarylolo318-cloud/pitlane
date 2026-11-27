@@ -130,7 +130,6 @@ pub fn build_table(views: &[SlotView], s: Settings) -> Table {
     for v in views {
         t.headers.push(Header { title: car_title(v.year, v.car), subtitle: v.car.trim.to_string(), modded: v.eval.modded });
     }
-    let est = |v: &SlotView| if v.eval.modded { " est." } else { "" };
 
     // numeric rows with deltas
     struct Spec<'a> {
@@ -171,8 +170,9 @@ pub fn build_table(views: &[SlotView], s: Settings) -> Table {
         for (i, v) in views.iter().enumerate() {
             let (now, stock) = (sp.pick)(&ms[i]);
             let unit = if sp.unit.is_empty() { String::new() } else { format!(" {}", sp.unit) };
-            let text = format!("{:.*}{}{}", sp.dec, now, unit, est(v));
             let changed = v.eval.modded && (now - stock).abs() >= 0.5 * 10f32.powi(-(sp.dec as i32));
+            // "est." only on figures the mods actually changed
+            let text = format!("{:.*}{}{}", sp.dec, now, unit, if changed { " est." } else { "" });
             let sub = if changed {
                 format!("stock {:.*} ({})", sp.dec, stock, signed(now - stock, sp.dec))
             } else if sp.sub_src {

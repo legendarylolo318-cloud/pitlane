@@ -10,11 +10,8 @@ license = "MIT"
 [profile.release]
 lto = "fat"
 codegen-units = 1
-opt-level = 3
+# "s" is 21 % smaller than 3 and only ~6 % slower to render (measured with examples/snap.rs);
+# "z" would halve rendering speed.
+opt-level = "s"
 strip = true
 panic = "abort"
-
-# Smaller Android build: `cargo apk build --profile release-android`
-[profile.release-android]
-inherits = "release"
-opt-level = "s"
