@@ -60,16 +60,21 @@ jobs:
   android:
     needs: test
     runs-on: ubuntu-22.04
-    env:
-      NDK_VERSION: 26.1.10909125
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: aarch64-linux-android }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17" }
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;${NDK_VERSION}"
+      # The runner image ships the Android SDK (ANDROID_HOME) and NDKs; only fetch what is missing.
+      - name: Android SDK / NDK
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -d "$ANDROID_HOME/platforms/android-34" ] || "$SDKM" "platforms;android-34"
+          [ -d "$ANDROID_HOME/build-tools/34.0.0" ] || "$SDKM" "build-tools;34.0.0"
+          NDK="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          echo "Using NDK $NDK"; ls "$NDK" > /dev/null
+          echo "NDK=$NDK" >> "$GITHUB_ENV"
       - run: cargo install cargo-apk --locked
       - name: Release keystore
         # Use the ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD secrets when present (stable signing
@@ -91,7 +96,7 @@ jobs:
           fi
       - name: Build APK (GPU renderer)
         run: |
-          export ANDROID_NDK_ROOT="$ANDROID_HOME/ndk/$NDK_VERSION"
+          export ANDROID_NDK_ROOT="$NDK"
           export ANDROID_NDK_HOME="$ANDROID_NDK_ROOT"
           export CARGO_APK_RELEASE_KEYSTORE="$RUNNER_TEMP/release.keystore"
           export CARGO_APK_RELEASE_KEYSTORE_PASSWORD="$KS_PASS"
