@@ -32,6 +32,7 @@ export global Backend {
     in-out property <int> model-index;
     in property <[string]> trims;
     in-out property <int> trim-index;
+    in property <bool> has-car;
     in property <string> selected-title;
     in property <string> stock-line;
     in property <string> mod-line;
@@ -369,6 +370,7 @@ component BuildPanel inherits ScrollView {
     in property <bool> two-column-pickers;
     VerticalLayout {
         padding: 12px; spacing: 10px;
+        alignment: start;
         LineEdit {
             placeholder-text: "Search: 06 civic si, lx570, 99 supra ...";
             text <=> Backend.search-text;
@@ -388,21 +390,29 @@ component BuildPanel inherits ScrollView {
             if Backend.slots.length < 5: PButton { text: "+"; width: 52px; clicked => { Backend.add-slot(); } }
             Rectangle { horizontal-stretch: 0.01; }
         }
-        Text { text: Backend.selected-title; font-size: 17px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
-        HorizontalLayout {
+        if !Backend.has-car: Rectangle {
+            background: Palette.alternate-background; border-radius: 8px;
+            VerticalLayout {
+                padding: 12px; spacing: 4px;
+                Text { text: "No cars yet"; font-size: 17px; font-weight: 700; color: Palette.foreground; }
+                Text { text: "Search above (e.g. \"2005 ford ranger\" or \"ranger 4.0\"), or tap + to add a car and pick it with Year / Make / Model / Engine."; font-size: 13px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.75); }
+            }
+        }
+        if Backend.has-car: Text { text: Backend.selected-title; font-size: 17px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
+        if Backend.has-car: HorizontalLayout {
             spacing: 6px;
             PButton { text: "Duplicate"; horizontal-stretch: 1; clicked => { Backend.duplicate-slot(); } }
             PButton { text: Backend.is-fav ? "★ Saved" : "☆ Favorite"; active: Backend.is-fav; horizontal-stretch: 1; clicked => { Backend.toggle-fav(); } }
             PButton { text: "Remove"; horizontal-stretch: 1; clicked => { Backend.remove-slot(); } }
         }
-        if !root.two-column-pickers: VerticalLayout {
+        if Backend.has-car && !root.two-column-pickers: VerticalLayout {
             spacing: 8px;
             Picker { label: "Year"; model: Backend.years; current <=> Backend.year-index; picked(i) => { Backend.year-picked(i); } }
             Picker { label: "Make"; model: Backend.makes; current <=> Backend.make-index; picked(i) => { Backend.make-picked(i); } }
             Picker { label: "Model"; model: Backend.models; current <=> Backend.model-index; picked(i) => { Backend.model-picked(i); } }
             Picker { label: "Trim / engine"; model: Backend.trims; current <=> Backend.trim-index; picked(i) => { Backend.trim-picked(i); } }
         }
-        if root.two-column-pickers: GridLayout {
+        if Backend.has-car && root.two-column-pickers: GridLayout {
             spacing: 8px;
             Row {
                 Picker { label: "Year"; model: Backend.years; current <=> Backend.year-index; picked(i) => { Backend.year-picked(i); } }
@@ -414,7 +424,7 @@ component BuildPanel inherits ScrollView {
             }
         }
 
-        Rectangle {
+        if Backend.has-car: Rectangle {
             background: Palette.alternate-background; border-radius: 8px;
             VerticalLayout {
                 padding: 10px; spacing: 3px;
@@ -423,18 +433,18 @@ component BuildPanel inherits ScrollView {
             }
         }
 
-        Section { text: "Mods (stackable, estimates)"; }
-        for m in Backend.gain-mods: ModItem {
+        if Backend.has-car: Section { text: "Mods (stackable, estimates)"; }
+        if Backend.has-car: VerticalLayout { spacing: 10px; for m in Backend.gain-mods: ModItem {
             m: m;
             toggled(on) => { Backend.mod-toggled(m.id, on); }
             changed(v) => { Backend.mod-value(m.id, v); }
-        }
-        Section { text: "Conditions & negatives"; }
-        for m in Backend.neg-mods: ModItem {
+        } }
+        if Backend.has-car: Section { text: "Conditions & negatives"; }
+        if Backend.has-car: VerticalLayout { spacing: 10px; for m in Backend.neg-mods: ModItem {
             m: m;
             toggled(on) => { Backend.mod-toggled(m.id, on); }
             changed(v) => { Backend.mod-value(m.id, v); }
-        }
+        } }
         Text { text: Backend.data-note; font-size: 11px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.55); }
     }
 }
@@ -447,20 +457,22 @@ component ComparePanel inherits ScrollView {
     property <length> min-col-w: root.width < 420px ? 88px : 96px;
     VerticalLayout {
         padding: 12px; spacing: 12px;
-        Text { text: "Modded numbers are estimates (est.). Best value per row is highlighted."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
-        if root.cards: CardPager { headers: Backend.headers; rows: Backend.rows; }
+        alignment: start;
+        if Backend.headers.length == 0: Text { text: "Nothing to compare yet. Add cars on the Build tab: search for one or tap +."; font-size: 14px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.75); }
+        if Backend.headers.length > 0: Text { text: "Modded numbers are estimates (est.). Best value per row is highlighted."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
+        if root.cards && Backend.headers.length > 0: CardPager { headers: Backend.headers; rows: Backend.rows; }
         if root.phone-portrait && Backend.headers.length > 1: Section { text: "Side by side"; }
         if root.phone-portrait && Backend.headers.length > 1: ScrollView {
             content-width: max(self.visible-width, 80px + max(1, Backend.headers.length) * 88px);
             min-height: compact.preferred-height;
             compact := CompareTable { width: parent.content-width; headers: Backend.headers; rows: Backend.compact-rows; label-w: 80px; min-col-w: 88px; }
         }
-        if !root.cards: ScrollView {
+        if !root.cards && Backend.headers.length > 0: ScrollView {
             content-width: max(self.visible-width, root.label-w + max(1, Backend.headers.length) * root.min-col-w);
             min-height: full.preferred-height;
             full := CompareTable { width: parent.content-width; headers: Backend.headers; rows: Backend.rows; label-w: root.label-w; min-col-w: root.min-col-w; }
         }
-        Section { text: "Charts"; }
+        if Backend.headers.length > 0: Section { text: "Charts"; }
         Charts { charts: Backend.charts; headers: Backend.headers; value-w: root.width < 420px ? 96px : 120px; }
     }
 }

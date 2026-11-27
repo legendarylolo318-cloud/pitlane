@@ -44,8 +44,9 @@ fn main() {
     let data = std::env::temp_dir().join(format!("pitlane-snap-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&data);
     std::fs::create_dir_all(&data).unwrap();
-    // three cars, one modded, so every view has real content
-    std::fs::write(
+    // three cars, one modded, so every view has real content (SNAP_EMPTY=1: the empty first-run state)
+    let empty = std::env::var_os("SNAP_EMPTY").is_some();
+    if !empty { std::fs::write(
         data.join("state.ron"),
         r#"(slots: [
             (year: 2018, car_id: "ford-mustang-s550-2015-2023-gt-5-0-2018", mods: [(id: "intake", value: 0.0), (id: "tune1", value: 0.0), (id: "nitrous", value: 75.0)]),
@@ -53,7 +54,7 @@ fn main() {
             (year: 2021, car_id: "toyota-supra-a90-gr-supra-2020-3-0-b58-2021", mods: []),
         ])"#,
     )
-    .unwrap();
+    .unwrap(); }
 
     let win = MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer);
     slint::platform::set_platform(Box::new(Headless(win.clone()))).unwrap();

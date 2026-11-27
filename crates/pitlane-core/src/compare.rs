@@ -126,6 +126,9 @@ fn fracs(vals: &[f32], better: Better) -> Vec<f32> {
 
 pub fn build_table(views: &[SlotView], s: Settings) -> Table {
     let mut t = Table::default();
+    if views.is_empty() {
+        return t; // nothing to compare: no rows, no charts
+    }
     let ms: Vec<Metrics> = views.iter().map(|v| metrics(v, s)).collect();
     for v in views {
         t.headers.push(Header { title: car_title(v.year, v.car), subtitle: v.car.trim.to_string(), modded: v.eval.modded });
@@ -314,6 +317,7 @@ mod tests {
         // a single car is never "best" against itself either
         let t = build_table(&[v()], Settings::default());
         assert!(t.rows.iter().flat_map(|r| &r.cells).all(|c| !c.best));
-        assert!(build_table(&[], Settings::default()).rows.iter().all(|r| r.cells.is_empty()));
+        let empty = build_table(&[], Settings::default());
+        assert!(empty.rows.is_empty() && empty.charts.is_empty() && empty.headers.is_empty());
     }
 }

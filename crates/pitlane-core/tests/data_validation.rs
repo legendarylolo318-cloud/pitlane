@@ -53,7 +53,7 @@ fn priority_models_exist() {
     let db = Db::bundled();
     let has = |make: &str, model: &str| db.cars_of_make(make).iter().any(|c| c.model.contains(model));
     for (mk, md) in [
-        ("Ford", "Mustang"), ("Ford", "F-150"), ("Chevrolet", "Camaro"), ("Chevrolet", "Corvette"), ("Chevrolet", "Silverado"),
+        ("Ford", "Mustang"), ("Ford", "F-150"), ("Ford", "Ranger"), ("Chevrolet", "Camaro"), ("Chevrolet", "Corvette"), ("Chevrolet", "Silverado"),
         ("Dodge", "Challenger"), ("Dodge", "Charger"), ("Dodge", "Viper"), ("Honda", "Civic"), ("Honda", "Accord"),
         ("Acura", "Integra"), ("Acura", "RSX"), ("Acura", "NSX"), ("Toyota", "Supra"), ("Toyota", "Camry"),
         ("Toyota", "Tacoma"), ("Toyota", "4Runner"), ("Lexus", "IS"), ("Lexus", "GS"), ("Lexus", "LS"), ("Lexus", "LC"),
@@ -63,6 +63,10 @@ fn priority_models_exist() {
         assert!(has(mk, md), "missing {mk} {md}");
     }
     assert!(db.cars_of_make("Jeep").iter().any(|c| c.trim.contains("Trackhawk")));
+    // every US-market Ranger year (not sold in the US 2012-2018)
+    for y in (1990..=2011).chain(2019..=2026) {
+        assert!(!db.trims_for(y, "Ford", "Ranger").is_empty(), "no Ford Ranger in {y}");
+    }
 }
 
 #[test]

@@ -160,10 +160,13 @@ fn ss(s: impl AsRef<str>) -> SharedString {
     SharedString::from(s.as_ref())
 }
 
-fn default_slot(db: &Db) -> Option<SlotState> {
-    let c = db.find("ford-mustang-s550-2015-2023-gt-5-0-2018").or_else(|| db.all_cars().next())?;
-    let year = if c.covers_year(2018) { 2018 } else { c.year_end };
-    Some(SlotState { year, car_id: c.id.to_string(), mods: vec![] })
+/// The car a fresh "+" slot starts as when there is nothing to copy: the first car of the newest year.
+fn starter_car(db: &Db) -> Option<(u16, Car)> {
+    (YEAR_MIN..=YEAR_MAX).rev().find_map(|y| {
+        let make = *db.makes_for_year(y).first()?;
+        let model = *db.models_for(y, make).first()?;
+        db.trims_for(y, make, model).first().map(|c| (y, (*c).clone()))
+    })
 }
 
 impl Ctx {
@@ -177,11 +180,7 @@ impl Ctx {
             }
         }
         self.state.slots.truncate(MAX_SLOTS);
-        if self.state.slots.is_empty() {
-            if let Some(s) = default_slot(&self.db) {
-                self.state.slots.push(s);
-            }
-        }
+        // the comparison starts empty: no default car is inserted
         self.sel = self.sel.min(self.state.slots.len().saturating_sub(1));
     }
 
@@ -200,12 +199,27 @@ impl Ctx {
         trims.iter().find(|c| Some(&*c.trim) == trim).or_else(|| trims.first()).map(|c| (*c).clone())
     }
 
+    /// Puts `car` into the selected slot, or adds the first slot when the comparison is empty.
     fn assign(&mut self, year: u16, car: &Car) {
-        if let Some(s) = self.state.slots.get_mut(self.sel) {
-            s.year = year;
-            s.car_id = car.id.to_string();
+        match self.state.slots.get_mut(self.sel) {
+            Some(s) => {
+                s.year = year;
+                s.car_id = car.id.to_string();
+            }
+            None => {
+                self.state.slots.push(SlotState { year, car_id: car.id.to_string(), mods: vec![] });
+                self.sel = self.state.slots.len() - 1;
+            }
         }
         self.dirty = true;
+    }
+
+    /// The selected car, or a starter car when the comparison is empty (base for "Add a custom car").
+    fn car_or_starter(&self) -> Option<(u16, Car)> {
+        match (self.state.slots.get(self.sel), self.car(self.sel)) {
+            (Some(sl), Some(c)) => Some((sl.year, c.clone())),
+            _ => starter_car(&self.db),
+        }
     }
 
     fn settings(&self) -> Settings {
@@ -409,6 +423,7 @@ fn refresh(ui: &MainWindow, c: &Ctx) {
             .collect(),
     );
     b.set_selected(c.sel as i32);
+    b.set_has_car(!views.is_empty());
 
     // pickers + mods for the selected slot
     if let (Some(slot), Some((_, view))) = (c.state.slots.get(c.sel), views.iter().find(|(i, _)| *i == c.sel)) {
@@ -431,7 +446,7 @@ fn refresh(ui: &MainWindow, c: &Ctx) {
         sync(&m.gain, mod_rows(car, slot, &view.eval, ModKind::Gain, &s));
         sync(&m.neg, mod_rows(car, slot, &view.eval, ModKind::Negative, &s));
     } else {
-        b.set_selected_title(ss("No car selected"));
+        b.set_selected_title(ss("No cars yet"));
         b.set_stock_line(ss(""));
         b.set_mod_line(ss(""));
     }
@@ -484,8 +499,7 @@ fn rebuild_db(c: &mut Ctx, ov: Overrides) {
 
 fn fill_edit(ui: &MainWindow, c: &Ctx, new_car: bool) {
     let b = ui.global::<Backend>();
-    let Some(car) = c.car(c.sel) else { return };
-    let year = c.state.slots.get(c.sel).map(|s| s.year).unwrap_or(car.year_end);
+    let Some((year, car)) = c.car_or_starter() else { return };
     b.set_ed_heading(ss(if new_car { "Add a custom car" } else { "Edit this car's stats" }));
     b.set_ed_new(new_car);
     b.set_ed_make(ss(&*car.make));
@@ -635,11 +649,18 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
     hook!(ui, ctx, saver, on_add_slot, |w, c| {
         if c.state.slots.len() >= MAX_SLOTS {
             c.status = "Maximum of 5 cars".into();
-        } else if let Some(cur) = c.state.slots.get(c.sel).cloned() {
-            // a new slot starts as the stock version of the current car; pick another with the pickers
-            c.state.slots.push(SlotState { mods: vec![], ..cur });
-            c.sel = c.state.slots.len() - 1;
-            c.dirty = true;
+        } else {
+            // a new slot starts as the stock version of the current car (or a starter car when the
+            // comparison is empty); pick another with search or the pickers
+            let new = match c.state.slots.get(c.sel).cloned() {
+                Some(cur) => Some(SlotState { mods: vec![], ..cur }),
+                None => starter_car(&c.db).map(|(year, car)| SlotState { year, car_id: car.id.to_string(), mods: vec![] }),
+            };
+            if let Some(slot) = new {
+                c.state.slots.push(slot);
+                c.sel = c.state.slots.len() - 1;
+                c.dirty = true;
+            }
         }
         refresh(&w, &c);
     });
@@ -656,13 +677,11 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         refresh(&w, &c);
     });
     hook!(ui, ctx, saver, on_remove_slot, |w, c| {
-        if c.state.slots.len() > 1 {
+        if !c.state.slots.is_empty() {
             let i = c.sel.min(c.state.slots.len() - 1);
             c.state.slots.remove(i);
-            c.sel = i.min(c.state.slots.len() - 1);
+            c.sel = i.min(c.state.slots.len().saturating_sub(1));
             c.dirty = true;
-        } else {
-            c.status = "At least one car is needed".into();
         }
         refresh(&w, &c);
     });
@@ -897,14 +916,20 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         });
     }
     hook!(ui, ctx, saver, on_open_edit, |w, c, new_car: bool| {
+        if !new_car && c.car(c.sel).is_none() {
+            c.status = "Add a car first (search, or tap +)".into();
+            w.global::<Backend>().set_dialog(0);
+            refresh(&w, &c);
+            return;
+        }
         c.edit_new = new_car;
         fill_edit(&w, &c, new_car);
         w.global::<Backend>().set_dialog(3);
     });
     hook!(ui, ctx, saver, on_edit_save, |w, c, as_new: bool| {
         let as_new = as_new || c.edit_new;
-        let (Some(base), Some(sl)) = (c.car(c.sel).cloned(), c.state.slots.get(c.sel).cloned()) else { return };
-        match read_edit(&w, &base, as_new, sl.year) {
+        let Some((year_now, base)) = c.car_or_starter() else { return };
+        match read_edit(&w, &base, as_new, year_now) {
             Ok((car, year)) => {
                 let mut ov = c.db.overrides().clone();
                 ov.upsert(car.clone());

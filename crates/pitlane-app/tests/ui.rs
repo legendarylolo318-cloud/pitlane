@@ -39,6 +39,35 @@ fn app_flows() {
 
     let (ui, keep) = open(&dir);
     let b = ui.global::<Backend>();
+    // --- the comparison starts empty
+    assert_eq!(b.get_slots().row_count(), 0);
+    assert!(!b.get_has_car());
+    assert_eq!(b.get_headers().row_count(), 0);
+    b.invoke_remove_slot();
+    b.invoke_open_edit(false);
+    assert_eq!(b.get_dialog(), 0, "nothing to edit yet");
+
+    // --- searching just the car adds it with its first engine for that year
+    b.invoke_search_edited("2005 ford ranger".into());
+    pump(200);
+    assert_eq!(strings(b.get_search_hits()), vec!["2005 Ford Ranger 2.3 Duratec I4".to_string()]);
+    b.invoke_search_pick(0);
+    assert_eq!(b.get_slots().row_count(), 1);
+    assert!(b.get_has_car());
+    assert_eq!(b.get_selected_title(), "2005 Ford Ranger");
+    let trims = strings(b.get_trims());
+    assert_eq!(trims[b.get_trim_index() as usize], "2.3 Duratec I4");
+    // an engine word switches the engine picker to that engine
+    b.invoke_search_edited("2005 ranger 4.0".into());
+    pump(200);
+    b.invoke_search_pick(0);
+    let trims = strings(b.get_trims());
+    assert_eq!(trims[b.get_trim_index() as usize], "4.0 SOHC V6");
+    assert_eq!(b.get_slots().row_count(), 1, "search replaces the selected car");
+
+    b.invoke_search_edited("2018 mustang gt".into());
+    pump(200);
+    b.invoke_search_pick(0);
     assert_eq!(b.get_selected_title(), "2018 Ford Mustang");
 
     // --- cascading pickers: a year without that model resets model/trim to valid ones
@@ -66,11 +95,14 @@ fn app_flows() {
     b.invoke_remove_slot();
     assert_eq!(b.get_slots().row_count(), 4);
     assert_eq!(b.get_selected(), 3);
-    for _ in 0..3 {
+    for _ in 0..4 {
         b.invoke_remove_slot();
     }
-    b.invoke_remove_slot();
-    assert_eq!(b.get_slots().row_count(), 1, "the last car cannot be removed");
+    assert_eq!(b.get_slots().row_count(), 0, "every car can be removed");
+    assert!(!b.get_has_car());
+    b.invoke_add_slot();
+    assert_eq!(b.get_slots().row_count(), 1, "+ on an empty comparison adds a starter car");
+    assert!(b.get_selected_title().starts_with("2026 "), "{}", b.get_selected_title());
     b.invoke_duplicate_slot();
     assert_eq!(b.get_slots().row_count(), 2);
     let rows = b.get_rows();

@@ -21,7 +21,10 @@ Compare up to 5 cars (US market, 1990-2026), stack mods, and see estimated modde
   passengers, cargo, roof rack, worn engine). Every modded figure is shown as a range and labelled "est.".
 * **Units**: imperial/metric, hp/kW/PS, lb-ft/Nm, 0-60 mph or 0-100 km/h, crank or estimated wheel power (drivetrain loss
   is configurable).
-* **Fuzzy search**: "06 civic si", "lx570", "'15 sti", "c8 z06".
+* **Fuzzy search**: "06 civic si", "lx570", "'15 sti", "c8 z06". Naming just the car ("ford ranger", "2005 ford ranger")
+  gives one result per generation (or one for that year) loaded with its first engine. Adding an engine word ("ranger 4.0",
+  "ranger ecoboost", "ranger raptor") picks that engine.
+* **Starts empty**: add cars by searching or with "+", then refine them with the pickers.
 * **Favorites and saved comparisons.**
 * **Your own data**: edit any car's stats (stored as an override), add custom cars, and import/export overrides as text.
 * **Export**: text or CSV (copy or save to a file) and PNG.

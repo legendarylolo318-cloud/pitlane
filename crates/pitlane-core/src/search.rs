@@ -82,8 +82,11 @@ pub fn search(db: &Db, query: &str, limit: usize) -> Vec<Hit> {
         if tokens.is_empty() && year.is_none() {
             continue;
         }
-        // Score against the cached normalized keys; only the winners get a label String.
-        let mut scored: Vec<(i32, &Car)> = Vec::new();
+        // A query that only names the car ("ford ranger", "2005 ranger") gives one hit per car,
+        // loaded with its first engine. Any word that only matches the engine/trim ("4.0",
+        // "ecoboost", "type r") gives one hit per engine instead, so that engine gets picked.
+        let car_only = !tokens.is_empty() && db.search_keys().iter().any(|k| tokens.iter().all(|t| k.car.contains(t.as_str())));
+        let mut scored: Vec<(i32, u16, &Car)> = Vec::new();
         for k in db.search_keys() {
             let Some(c) = db.car_at(k.make, k.index) else { continue };
             if let Some(y) = year {
@@ -92,23 +95,40 @@ pub fn search(db: &Db, query: &str, limit: usize) -> Vec<Hit> {
                 }
             }
             let Some(score) = score_text(&tokens, &k.hay, &k.words) else { continue };
-            scored.push((score - (k.hay.len() / 8) as i32, c));
+            if car_only {
+                if !tokens.iter().all(|t| k.car.contains(t.as_str())) {
+                    continue;
+                }
+                scored.push((score, k.index, c));
+            } else {
+                scored.push((score - (k.hay.len() / 8) as i32, k.index, c));
+            }
         }
-        if !scored.is_empty() {
-            let label = |c: &Car| {
-                let y = year.unwrap_or(c.year_end);
-                (y, format!("{} {} {} {}", y, c.make, c.model, c.trim))
-            };
-            scored.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.model.cmp(&b.1.model)).then_with(|| a.1.trim.cmp(&b.1.trim)));
-            return scored
-                .into_iter()
-                .take(limit)
-                .map(|(score, c)| {
-                    let (year, label) = label(c);
-                    Hit { car_id: c.id.to_string(), year, label, score }
-                })
-                .collect();
+        if scored.is_empty() {
+            continue;
         }
+        let hit = |score: i32, y: u16, c: &Car| Hit { car_id: c.id.to_string(), year: y, label: format!("{} {} {} {}", y, c.make, c.model, c.trim), score };
+        if !car_only {
+            scored.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.2.model.cmp(&b.2.model)).then_with(|| a.1.cmp(&b.1)));
+            return scored.into_iter().take(limit).map(|(s, _, c)| hit(s, year.unwrap_or(c.year_end), c)).collect();
+        }
+        // group: with a year, one hit per make/model; without, one per generation (newest year)
+        let mut groups: Vec<(i32, u16, &Car)> = Vec::new();
+        let mut seen: Vec<(&str, &str, &str)> = Vec::new();
+        for &(score, _, c) in &scored {
+            let key = (&*c.make, &*c.model, if year.is_some() { "" } else { &*c.generation });
+            if seen.contains(&key) {
+                continue;
+            }
+            seen.push(key);
+            let members = scored.iter().filter(|(_, _, o)| o.make == key.0 && o.model == key.1 && (year.is_some() || o.generation == key.2));
+            let y = year.unwrap_or_else(|| members.clone().map(|m| m.2.year_end).max().unwrap_or(c.year_end));
+            // the first engine listed for that year
+            let first = members.filter(|m| m.2.covers_year(y)).min_by_key(|m| m.1).map(|m| m.2).unwrap_or(c);
+            groups.push((score, y, first));
+        }
+        groups.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| b.1.cmp(&a.1)).then_with(|| a.2.model.cmp(&b.2.model)));
+        return groups.into_iter().take(limit).map(|(s, y, c)| hit(s, y, c)).collect();
     }
     Vec::new()
 }
@@ -141,6 +161,25 @@ mod tests {
         assert!(h.iter().any(|x| x.label.contains("Challenger")) && h.iter().any(|x| x.label.contains("Charger")), "{h:?}");
         let h = search(&db, "'15 sti", 5);
         assert!(h[0].label.contains("WRX STI") && h[0].year == 2015, "{h:?}");
+        // naming only the car: one hit per generation, newest first, each with its first engine
+        let h = search(&db, "ford ranger", 10);
+        assert_eq!(h.len(), 5, "{h:?}");
+        assert!(h.iter().all(|x| x.label.contains("Ford Ranger")));
+        assert_eq!(h[0].label, "2026 Ford Ranger 2.3 EcoBoost");
+        assert_eq!(h[2].label, "2011 Ford Ranger 2.3 Duratec I4");
+        // with a year: exactly that year's car, first engine of that year
+        let h = search(&db, "2005 ford ranger", 10);
+        assert_eq!(h.len(), 1, "{h:?}");
+        assert_eq!((h[0].year, h[0].label.as_str()), (2005, "2005 Ford Ranger 2.3 Duratec I4"));
+        let h = search(&db, "1999 ranger", 10);
+        assert_eq!(h[0].label, "1999 Ford Ranger 2.5 I4");
+        // engine words pick the engine
+        let h = search(&db, "2005 ranger 4.0", 10);
+        assert_eq!(h[0].label, "2005 Ford Ranger 4.0 SOHC V6", "{h:?}");
+        let h = search(&db, "ranger ecoboost", 10);
+        assert!(h.iter().all(|x| x.label.contains("EcoBoost")) && h.len() >= 4, "{h:?}");
+        let h = search(&db, "ranger raptor", 10);
+        assert_eq!(h[0].label, "2026 Ford Ranger Raptor 3.0 EcoBoost");
         let h = search(&db, "c8 z06", 5);
         assert!(h[0].label.contains("Z06"), "{h:?}");
         // subsequence fallback for typos with letters skipped

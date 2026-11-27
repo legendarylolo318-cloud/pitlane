@@ -80,6 +80,8 @@ pub struct SearchKey {
     pub hay: Box<str>,
     /// The same words, space separated, for whole-word bonuses.
     pub words: Box<str>,
+    /// Make + model only ("fordranger"): a query that only names the car, not an engine.
+    pub car: Box<str>,
 }
 
 struct Reader {
@@ -316,7 +318,14 @@ impl Db {
                 for (ci, c) in self.load(mi).iter().enumerate() {
                     let text = format!("{} {} {} {} {}", c.make, c.model, c.trim, c.generation, c.engine_code);
                     let words: Vec<String> = text.split(|ch: char| !ch.is_alphanumeric()).map(crate::search::normalize).filter(|w| !w.is_empty()).collect();
-                    out.push(SearchKey { make: mi as u16, index: ci as u16, hay: words.concat().into_boxed_str(), words: words.join(" ").into_boxed_str() });
+                    let car = crate::search::normalize(&format!("{}{}", c.make, c.model));
+                    out.push(SearchKey {
+                        make: mi as u16,
+                        index: ci as u16,
+                        hay: words.concat().into_boxed_str(),
+                        words: words.join(" ").into_boxed_str(),
+                        car: car.into_boxed_str(),
+                    });
                 }
             }
             out
