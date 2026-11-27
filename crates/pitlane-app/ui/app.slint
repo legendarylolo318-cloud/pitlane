@@ -1,18 +1,18 @@
 import { ComboBox, Slider, LineEdit, TextEdit, ScrollView, Palette } from "std-widgets.slint";
 
 // Layout rules (all sizes are logical px = dp on Android):
-//  * every touch target is at least 48px tall (Android guideline);
-//  * phone   = shortest side < 520px: tabs (Build / Compare), swipeable cards in portrait;
-//  * tablet portrait / small window: tabs, full table;
-//  * wide    = width >= 840px: Build panel and comparison side by side;
+//  * every touch target is at least 48px (Android guideline), even where the visible pill is smaller;
+//  * phone   = shortest side < 520px: one compact top bar, Build / Compare in a bottom bar;
+//  * tablet portrait / small window: same, with the full comparison table;
+//  * wide    = width >= 840px: Build panel and comparison side by side, no bottom bar;
 //  * the content is inset by the platform safe area (status/navigation bar, notch) and lifted
-//    above the on-screen keyboard.
-// Nothing animates or ticks while idle; the only animation is the card swipe, which runs only
-// while a page change is in progress.
+//    above the on-screen keyboard;
+//  * status messages appear in a small bar that hides itself (a single-shot timer, nothing ticks idle).
 
 export struct SlotInfo { title: string, subtitle: string, modded: bool, color: color }
 export struct CellData { text: string, sub: string, best: bool, frac: float }
 export struct RowData { label: string, cells: [CellData] }
+export struct StatData { label: string, value: string, delta: string, changed: bool, better: bool }
 export struct ModRow {
     id: string, name: string, desc: string, enabled: bool,
     has-slider: bool, value: float, min: float, max: float, step: float,
@@ -34,8 +34,10 @@ export global Backend {
     in-out property <int> trim-index;
     in property <bool> has-car;
     in property <string> selected-title;
-    in property <string> stock-line;
-    in property <string> mod-line;
+    in property <[StatData]> stats;
+    in property <string> detail-line;
+    in property <string> mod-note;
+    in property <int> active-mods;
     in property <bool> is-fav;
     in property <[ModRow]> gain-mods;
     in property <[ModRow]> neg-mods;
@@ -53,6 +55,7 @@ export global Backend {
     in property <string> wheel-text;
     in property <string> status;
     in property <string> data-note;
+    // 0 = table, 1 = cards
     in-out property <int> view-mode;
     in-out property <int> dialog;
     in-out property <string> export-text;
@@ -120,6 +123,9 @@ export global Backend {
 
 global Ui {
     out property <length> touch: 48px;
+    out property <color> good: #2e9b3a;
+    out property <color> warn: #d9822b;
+    out property <color> best-bg: #2e7d3238;
 }
 
 component PButton inherits Rectangle {
@@ -149,9 +155,57 @@ component PButton inherits Rectangle {
     }
 }
 
+// A small pill with a full 48px touch area: visually light, still easy to hit.
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <bool> active: false;
+    callback clicked();
+    min-height: Ui.touch;
+    min-width: Ui.touch;
+    preferred-width: lbl.preferred-width + 24px;
+    horizontal-stretch: 0;
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
+    ta := TouchArea { clicked => { root.clicked(); } }
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        height: 34px;
+        border-radius: 17px;
+        border-width: 1px;
+        border-color: root.active ? Palette.accent-background : Palette.border;
+        background: root.active ? Palette.accent-background : (ta.pressed ? Palette.border : transparent);
+        lbl := Text {
+            text: root.text; font-size: 13px; overflow: elide; horizontal-alignment: center; vertical-alignment: center;
+            width: parent.width - 16px;
+            color: root.active ? Palette.accent-foreground : Palette.foreground;
+        }
+    }
+}
+
+// Two or more options in one rounded control (Table | Cards).
+component Segmented inherits Rectangle {
+    in property <[string]> options;
+    in-out property <int> current;
+    min-height: Ui.touch;
+    HorizontalLayout {
+        padding-top: 7px; padding-bottom: 7px;
+        for o[i] in root.options: Rectangle {
+            horizontal-stretch: 1;
+            border-radius: 8px;
+            background: i == root.current ? Palette.accent-background : Palette.alternate-background;
+            accessible-role: button;
+            accessible-label: o;
+            accessible-action-default => { root.current = i; }
+            TouchArea { y: -7px; height: parent.height + 14px; clicked => { root.current = i; } }
+            Text { text: o; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; color: i == root.current ? Palette.accent-foreground : Palette.foreground; }
+        }
+    }
+}
+
 component Cell inherits Rectangle {
     in property <CellData> d;
-    background: d.best ? #2e7d3238 : transparent;
+    background: d.best ? Ui.best-bg : transparent;
     border-radius: 6px;
     VerticalLayout {
         padding: 5px; spacing: 1px;
@@ -182,12 +236,16 @@ component CompareTable inherits Rectangle {
                 }
             }
         }
-        for row in root.rows: HorizontalLayout {
-            Rectangle {
-                width: root.label-w;
-                Text { x: 4px; width: parent.width - 8px; text: row.label; font-size: 12px; wrap: word-wrap; vertical-alignment: center; color: Palette.foreground.with-alpha(0.75); }
+        for row[ri] in root.rows: Rectangle {
+            background: Math.mod(ri, 2) == 0 ? Palette.alternate-background.with-alpha(0.5) : transparent;
+            border-radius: 6px;
+            HorizontalLayout {
+                Rectangle {
+                    width: root.label-w;
+                    Text { x: 6px; width: parent.width - 10px; text: row.label; font-size: 12px; wrap: word-wrap; vertical-alignment: center; color: Palette.foreground.with-alpha(0.75); }
+                }
+                for c in row.cells: Cell { width: root.col-w; d: c; }
             }
-            for c in row.cells: Cell { width: root.col-w; d: c; }
         }
     }
 }
@@ -202,13 +260,14 @@ component CarCard inherits Rectangle {
     border-color: root.info.color;
     preferred-height: v.preferred-height;
     v := VerticalLayout {
-        padding: 12px; spacing: 3px;
+        padding: 12px; spacing: 2px;
         alignment: start;
-        Text { text: root.info.title; font-size: 18px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
-        Text { text: root.info.subtitle + (root.info.modded ? "  -  modded (est.)" : ""); font-size: 13px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+        Text { text: root.info.title; font-size: 17px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
+        Text { text: root.info.subtitle + (root.info.modded ? "  -  modded (est.)" : ""); font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+        Rectangle { height: 4px; }
         for row in root.rows: HorizontalLayout {
             spacing: 8px;
-            Text { text: row.label; width: 42%; font-size: 12px; wrap: word-wrap; vertical-alignment: center; color: Palette.foreground.with-alpha(0.7); }
+            Text { text: row.label; width: 40%; font-size: 12px; wrap: word-wrap; vertical-alignment: center; color: Palette.foreground.with-alpha(0.7); }
             Cell { horizontal-stretch: 1; d: row.cells[root.index]; }
         }
     }
@@ -226,11 +285,20 @@ component CardPager inherits Rectangle {
     preferred-height: lay.preferred-height;
     lay := VerticalLayout {
         spacing: 6px;
+        HorizontalLayout {
+            height: Ui.touch; spacing: 10px; alignment: center;
+            Chip { text: "‹ Prev"; clicked => { if (root.current > 0) { root.page = root.current - 1; } } }
+            for h[i] in root.headers: Rectangle {
+                width: 18px;
+                Rectangle { width: 10px; height: 10px; border-radius: 5px; background: i == root.current ? h.color : h.color.with-alpha(0.3); }
+                TouchArea { clicked => { root.page = i; } }
+            }
+            Chip { text: "Next ›"; clicked => { if (root.current < root.count - 1) { root.page = root.current + 1; } } }
+        }
         Rectangle {
             clip: true;
-            // The invisible copy of the current card gives the pager its height, so long, wrapped
-            // rows are never cut off whatever the screen width. (min-height, because a ScrollView
-            // sizes its content from the minimum height.)
+            // The invisible copy of the current card gives the pager its height (min-height: a
+            // ScrollView sizes its content from the minimum height).
             min-height: measure.preferred-height;
             measure := CarCard {
                 x: 4px; width: parent.width - 8px; opacity: 0;
@@ -258,15 +326,6 @@ component CardPager inherits Rectangle {
                 }
             }
         }
-        HorizontalLayout {
-            height: Ui.touch; spacing: 10px; alignment: center;
-            PButton { text: "<"; width: 56px; clicked => { if (root.current > 0) { root.page = root.current - 1; } } }
-            for h[i] in root.headers: Rectangle {
-                width: 20px;
-                Rectangle { width: 12px; height: 12px; border-radius: 6px; background: i == root.current ? h.color : h.color.with-alpha(0.3); }
-            }
-            PButton { text: ">"; width: 56px; clicked => { if (root.current < root.count - 1) { root.page = root.current + 1; } } }
-        }
     }
 }
 
@@ -280,17 +339,29 @@ component Charts inherits Rectangle {
         spacing: 14px;
         for ch in root.charts: VerticalLayout {
             spacing: 4px;
-            Text { text: ch.label; font-weight: 700; font-size: 14px; wrap: word-wrap; color: Palette.foreground; }
+            Text { text: ch.label; font-weight: 700; font-size: 13px; wrap: word-wrap; color: Palette.foreground; }
             for b[i] in ch.cells: HorizontalLayout {
                 spacing: 6px;
-                Rectangle { width: 26px; Text { text: "#" + (i + 1); font-size: 12px; vertical-alignment: center; color: root.headers[i].color; font-weight: 700; } }
+                Rectangle { width: 22px; Text { text: "#" + (i + 1); font-size: 12px; vertical-alignment: center; color: root.headers[i].color; font-weight: 700; } }
                 Rectangle {
-                    horizontal-stretch: 1; height: 22px; background: Palette.alternate-background; border-radius: 4px;
+                    horizontal-stretch: 1; height: 18px; y: 2px; background: Palette.alternate-background; border-radius: 4px;
                     Rectangle { x: 0px; width: parent.width * max(0.03, b.frac); height: parent.height; border-radius: 4px; background: b.best ? #2e7d32 : root.headers[i].color.with-alpha(0.75); }
                 }
                 Rectangle { width: root.value-w; Text { width: parent.width; text: b.text; font-size: 12px; horizontal-alignment: right; vertical-alignment: center; overflow: elide; font-weight: b.best ? 700 : 400; color: Palette.foreground; } }
             }
         }
+    }
+}
+
+component StatTile inherits Rectangle {
+    in property <StatData> d;
+    border-radius: 8px;
+    background: d.changed ? (d.better ? Ui.best-bg : Ui.warn.with-alpha(0.15)) : Palette.alternate-background;
+    min-height: v.preferred-height;
+    v := VerticalLayout {
+        padding: 6px; spacing: 0px; alignment: center;
+        Text { text: d.value; font-size: 15px; font-weight: 700; horizontal-alignment: center; overflow: elide; color: Palette.foreground; }
+        Text { text: d.delta != "" ? d.delta : d.label; font-size: 11px; horizontal-alignment: center; overflow: elide; color: d.changed ? (d.better ? Ui.good : Ui.warn) : Palette.foreground.with-alpha(0.6); }
     }
 }
 
@@ -301,13 +372,13 @@ component ModItem inherits Rectangle {
     background: m.enabled ? Palette.alternate-background : transparent;
     border-radius: 8px;
     preferred-height: v.preferred-height;
-    TouchArea { y: 0px; height: Ui.touch + 4px; clicked => { root.toggled(!root.m.enabled); } }
+    TouchArea { y: 0px; height: Ui.touch; clicked => { root.toggled(!root.m.enabled); } }
     v := VerticalLayout {
-        padding: 4px; padding-left: 6px; padding-right: 6px; spacing: 4px;
+        padding-left: 6px; padding-right: 6px; padding-bottom: root.m.enabled ? 6px : 0px; spacing: 2px;
         HorizontalLayout {
             height: Ui.touch; spacing: 10px;
             Rectangle {
-                width: 28px; height: 28px; y: (parent.height - self.height) / 2; border-radius: 6px; border-width: 2px; border-color: Palette.accent-background;
+                width: 24px; height: 24px; y: (parent.height - self.height) / 2; border-radius: 6px; border-width: 2px; border-color: Palette.accent-background;
                 background: root.m.enabled ? Palette.accent-background : transparent;
                 accessible-role: checkbox;
                 accessible-checkable: true;
@@ -316,30 +387,30 @@ component ModItem inherits Rectangle {
                 accessible-action-default => { root.toggled(!root.m.enabled); }
                 Text { text: root.m.enabled ? "✓" : ""; color: Palette.accent-foreground; horizontal-alignment: center; vertical-alignment: center; font-weight: 700; }
             }
-            Text { text: root.m.name; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; font-weight: 600; font-size: 14px; color: Palette.foreground; }
+            Text { text: root.m.name; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; font-weight: root.m.enabled ? 600 : 400; font-size: 14px; color: Palette.foreground; }
+            if root.m.warning != "" && !root.m.enabled: Text { text: "!"; font-weight: 700; vertical-alignment: center; color: Ui.warn; }
         }
-        if root.m.enabled: Text { text: root.m.desc; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
         if root.m.enabled && root.m.has-slider: HorizontalLayout {
             spacing: 8px; height: Ui.touch;
-            Text { text: root.m.slider-label; width: 84px; vertical-alignment: center; font-size: 12px; wrap: word-wrap; color: Palette.foreground; }
             Slider {
                 minimum: root.m.min; maximum: root.m.max; value: root.m.value; step: root.m.step; height: Ui.touch;
                 horizontal-stretch: 1;
+                accessible-label: root.m.slider-label;
                 changed(v) => { root.changed(v); }
             }
             Text { text: root.m.value-text; width: 76px; vertical-alignment: center; horizontal-alignment: right; font-size: 13px; font-weight: 700; color: Palette.foreground; }
         }
-        if root.m.enabled && root.m.gain != "": Text { text: root.m.gain; font-size: 13px; wrap: word-wrap; color: #2e9b3a; }
-        if root.m.warning != "": Text { text: root.m.warning; font-size: 12px; wrap: word-wrap; color: #d9822b; }
+        if root.m.enabled && root.m.gain != "": Text { text: root.m.gain; font-size: 12px; wrap: word-wrap; color: Ui.good; }
+        if root.m.warning != "" && root.m.enabled: Text { text: root.m.warning; font-size: 12px; wrap: word-wrap; color: Ui.warn; }
     }
 }
 
 component Section inherits Text {
-    font-size: 16px; font-weight: 700; wrap: word-wrap; color: Palette.foreground;
+    font-size: 15px; font-weight: 700; wrap: word-wrap; color: Palette.foreground;
 }
 
 component Caption inherits Text {
-    font-size: 12px; color: Palette.foreground.with-alpha(0.7);
+    font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65);
 }
 
 component LabeledField inherits HorizontalLayout {
@@ -352,27 +423,19 @@ component LabeledField inherits HorizontalLayout {
     LineEdit { text <=> root.value; input-type: root.kind; read-only: root.read-only; height: Ui.touch; min-width: 64px; horizontal-stretch: 1; }
 }
 
-component Picker inherits VerticalLayout {
-    in property <string> label;
-    in property <[string]> model;
-    in-out property <int> current;
+component Picker inherits ComboBox {
     callback picked(int);
-    spacing: 2px;
-    Caption { text: root.label; }
-    ComboBox {
-        model: root.model; current-index <=> root.current; height: Ui.touch;
-        accessible-label: root.label;
-        selected => { root.picked(self.current-index); }
-    }
+    height: Ui.touch;
+    selected => { root.picked(self.current-index); }
 }
 
 component BuildPanel inherits ScrollView {
-    in property <bool> two-column-pickers;
+    in-out property <bool> show-all-mods: false;
     VerticalLayout {
         padding: 12px; spacing: 10px;
         alignment: start;
         LineEdit {
-            placeholder-text: "Search: 06 civic si, lx570, 99 supra ...";
+            placeholder-text: "Search: 2005 ranger, 06 civic si, lx570";
             text <=> Backend.search-text;
             input-type: InputType.search;
             height: Ui.touch;
@@ -380,100 +443,121 @@ component BuildPanel inherits ScrollView {
         }
         for hit[i] in Backend.search-hits: PButton { text: hit; active: false; clicked => { Backend.search-pick(i); } }
 
-        Section { text: "Cars to compare (max 5)"; }
+        // cars in the comparison
         HorizontalLayout {
             spacing: 6px;
             for s[i] in Backend.slots: PButton {
                 text: "#" + (i + 1); dot: s.color; active: i == Backend.selected; min-width: 52px; horizontal-stretch: 1; max-width: 72px;
                 clicked => { Backend.select-slot(i); }
             }
-            if Backend.slots.length < 5: PButton { text: "+"; width: 52px; clicked => { Backend.add-slot(); } }
+            if Backend.slots.length < 5: PButton { text: Backend.slots.length == 0 ? "+ Add car" : "+"; min-width: 52px; clicked => { Backend.add-slot(); } }
             Rectangle { horizontal-stretch: 0.01; }
         }
+
         if !Backend.has-car: Rectangle {
             background: Palette.alternate-background; border-radius: 8px;
             VerticalLayout {
                 padding: 12px; spacing: 4px;
                 Text { text: "No cars yet"; font-size: 17px; font-weight: 700; color: Palette.foreground; }
-                Text { text: "Search above (e.g. \"2005 ford ranger\" or \"ranger 4.0\"), or tap + to add a car and pick it with Year / Make / Model / Engine."; font-size: 13px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.75); }
-            }
-        }
-        if Backend.has-car: Text { text: Backend.selected-title; font-size: 17px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
-        if Backend.has-car: HorizontalLayout {
-            spacing: 6px;
-            PButton { text: "Duplicate"; horizontal-stretch: 1; clicked => { Backend.duplicate-slot(); } }
-            PButton { text: Backend.is-fav ? "★ Saved" : "☆ Favorite"; active: Backend.is-fav; horizontal-stretch: 1; clicked => { Backend.toggle-fav(); } }
-            PButton { text: "Remove"; horizontal-stretch: 1; clicked => { Backend.remove-slot(); } }
-        }
-        if Backend.has-car && !root.two-column-pickers: VerticalLayout {
-            spacing: 8px;
-            Picker { label: "Year"; model: Backend.years; current <=> Backend.year-index; picked(i) => { Backend.year-picked(i); } }
-            Picker { label: "Make"; model: Backend.makes; current <=> Backend.make-index; picked(i) => { Backend.make-picked(i); } }
-            Picker { label: "Model"; model: Backend.models; current <=> Backend.model-index; picked(i) => { Backend.model-picked(i); } }
-            Picker { label: "Trim / engine"; model: Backend.trims; current <=> Backend.trim-index; picked(i) => { Backend.trim-picked(i); } }
-        }
-        if Backend.has-car && root.two-column-pickers: GridLayout {
-            spacing: 8px;
-            Row {
-                Picker { label: "Year"; model: Backend.years; current <=> Backend.year-index; picked(i) => { Backend.year-picked(i); } }
-                Picker { label: "Make"; model: Backend.makes; current <=> Backend.make-index; picked(i) => { Backend.make-picked(i); } }
-            }
-            Row {
-                Picker { label: "Model"; model: Backend.models; current <=> Backend.model-index; picked(i) => { Backend.model-picked(i); } }
-                Picker { label: "Trim / engine"; model: Backend.trims; current <=> Backend.trim-index; picked(i) => { Backend.trim-picked(i); } }
+                Caption { text: "Search above (e.g. \"2005 ford ranger\" or \"ranger 4.0\"), or tap + to add a car and pick it with Year / Make / Model / Engine."; font-size: 13px; }
             }
         }
 
-        if Backend.has-car: Rectangle {
-            background: Palette.alternate-background; border-radius: 8px;
+        if Backend.has-car: VerticalLayout {
+            spacing: 8px;
+            // title + compact actions
+            HorizontalLayout {
+                spacing: 4px;
+                Text { text: Backend.selected-title; font-size: 17px; font-weight: 700; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; color: Palette.foreground; }
+                Chip { text: Backend.is-fav ? "★" : "☆"; active: Backend.is-fav; accessible-label: Backend.is-fav ? "Remove favorite" : "Add favorite"; clicked => { Backend.toggle-fav(); } }
+                Chip { text: "Copy"; accessible-label: "Duplicate this car"; clicked => { Backend.duplicate-slot(); } }
+                Chip { text: "Remove"; accessible-label: "Remove this car"; clicked => { Backend.remove-slot(); } }
+            }
+            // pickers: year + make on one row, then model, then engine
+            HorizontalLayout {
+                spacing: 8px;
+                Picker { width: 104px; model: Backend.years; current-index <=> Backend.year-index; accessible-label: "Year"; picked(i) => { Backend.year-picked(i); } }
+                Picker { horizontal-stretch: 1; model: Backend.makes; current-index <=> Backend.make-index; accessible-label: "Make"; picked(i) => { Backend.make-picked(i); } }
+            }
+            Picker { model: Backend.models; current-index <=> Backend.model-index; accessible-label: "Model"; picked(i) => { Backend.model-picked(i); } }
+            Picker { model: Backend.trims; current-index <=> Backend.trim-index; accessible-label: "Trim / engine"; picked(i) => { Backend.trim-picked(i); } }
+            // headline numbers
+            HorizontalLayout {
+                spacing: 6px;
+                for st in Backend.stats: StatTile { d: st; horizontal-stretch: 1; }
+            }
+            Caption { text: Backend.detail-line; }
+            if Backend.mod-note != "": Caption { text: Backend.mod-note; color: Palette.foreground.with-alpha(0.8); }
+
+            // mods: only the active ones unless expanded
+            HorizontalLayout {
+                spacing: 8px;
+                Section { text: Backend.active-mods == 0 ? "Mods" : "Mods (" + Backend.active-mods + " on)"; vertical-alignment: center; horizontal-stretch: 1; }
+                Chip {
+                    text: root.show-all-mods ? "Done" : (Backend.active-mods == 0 ? "Add mods" : "Edit mods");
+                    active: root.show-all-mods;
+                    clicked => { root.show-all-mods = !root.show-all-mods; }
+                }
+            }
+            if Backend.active-mods == 0 && !root.show-all-mods: Caption { text: "Stock. Tap 'Add mods' for bolt-ons, tunes, nitrous, weight and conditions like altitude or passengers."; }
+            if root.show-all-mods: Caption { text: "Performance"; font-weight: 700; }
             VerticalLayout {
-                padding: 10px; spacing: 3px;
-                Text { text: Backend.stock-line; font-size: 13px; wrap: word-wrap; color: Palette.foreground; }
-                if Backend.mod-line != "": Text { text: Backend.mod-line; font-size: 13px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
+                for m in Backend.gain-mods: VerticalLayout {
+                    padding-bottom: (m.enabled || root.show-all-mods) ? 4px : 0px;
+                    if m.enabled || root.show-all-mods: ModItem {
+                        m: m;
+                        toggled(on) => { Backend.mod-toggled(m.id, on); }
+                        changed(v) => { Backend.mod-value(m.id, v); }
+                    }
+                }
+            }
+            if root.show-all-mods: Caption { text: "Conditions & negatives"; font-weight: 700; }
+            VerticalLayout {
+                for m in Backend.neg-mods: VerticalLayout {
+                    padding-bottom: (m.enabled || root.show-all-mods) ? 4px : 0px;
+                    if m.enabled || root.show-all-mods: ModItem {
+                        m: m;
+                        toggled(on) => { Backend.mod-toggled(m.id, on); }
+                        changed(v) => { Backend.mod-value(m.id, v); }
+                    }
+                }
             }
         }
-
-        if Backend.has-car: Section { text: "Mods (stackable, estimates)"; }
-        if Backend.has-car: VerticalLayout { spacing: 10px; for m in Backend.gain-mods: ModItem {
-            m: m;
-            toggled(on) => { Backend.mod-toggled(m.id, on); }
-            changed(v) => { Backend.mod-value(m.id, v); }
-        } }
-        if Backend.has-car: Section { text: "Conditions & negatives"; }
-        if Backend.has-car: VerticalLayout { spacing: 10px; for m in Backend.neg-mods: ModItem {
-            m: m;
-            toggled(on) => { Backend.mod-toggled(m.id, on); }
-            changed(v) => { Backend.mod-value(m.id, v); }
-        } }
-        Text { text: Backend.data-note; font-size: 11px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.55); }
+        Text { text: Backend.data-note; font-size: 11px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.5); }
     }
 }
 
 component ComparePanel inherits ScrollView {
-    in property <bool> phone-portrait;
-    in property <bool> phone-landscape;
-    property <bool> cards: root.phone-portrait || (!root.phone-landscape && Backend.view-mode == 1);
-    property <length> label-w: root.width < 420px ? 92px : 120px;
-    property <length> min-col-w: root.width < 420px ? 88px : 96px;
+    in property <bool> narrow;
+    // narrow screens show the key rows unless "All specs" is on
+    property <bool> all-specs: false;
+    // three cars fit side by side on a 320px phone; more scroll sideways
+    property <length> label-w: root.width < 360px ? 64px : root.width < 420px ? 72px : 120px;
+    property <length> min-col-w: root.width < 360px ? 76px : root.width < 420px ? 80px : 100px;
     VerticalLayout {
-        padding: 12px; spacing: 12px;
+        padding: root.width < 360px ? 8px : 12px; spacing: 10px;
         alignment: start;
         if Backend.headers.length == 0: Text { text: "Nothing to compare yet. Add cars on the Build tab: search for one or tap +."; font-size: 14px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.75); }
-        if Backend.headers.length > 0: Text { text: "Modded numbers are estimates (est.). Best value per row is highlighted."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
-        if root.cards && Backend.headers.length > 0: CardPager { headers: Backend.headers; rows: Backend.rows; }
-        if root.phone-portrait && Backend.headers.length > 1: Section { text: "Side by side"; }
-        if root.phone-portrait && Backend.headers.length > 1: ScrollView {
-            content-width: max(self.visible-width, 80px + max(1, Backend.headers.length) * 88px);
-            min-height: compact.preferred-height;
-            compact := CompareTable { width: parent.content-width; headers: Backend.headers; rows: Backend.compact-rows; label-w: 80px; min-col-w: 88px; }
+        if Backend.headers.length > 0: HorizontalLayout {
+            spacing: 8px;
+            Segmented { options: ["Table", "Cards"]; current <=> Backend.view-mode; horizontal-stretch: 1; max-width: 280px; }
+            Rectangle { horizontal-stretch: 0.001; }
+            if root.narrow && Backend.view-mode == 0: Chip { text: root.all-specs ? "Key specs" : "All specs"; clicked => { root.all-specs = !root.all-specs; } }
         }
-        if !root.cards && Backend.headers.length > 0: ScrollView {
+        if Backend.headers.length > 0 && Backend.view-mode == 1: CardPager { headers: Backend.headers; rows: Backend.rows; }
+        if Backend.headers.length > 0 && Backend.view-mode == 0: ScrollView {
             content-width: max(self.visible-width, root.label-w + max(1, Backend.headers.length) * root.min-col-w);
-            min-height: full.preferred-height;
-            full := CompareTable { width: parent.content-width; headers: Backend.headers; rows: Backend.rows; label-w: root.label-w; min-col-w: root.min-col-w; }
+            min-height: table.preferred-height;
+            table := CompareTable {
+                width: parent.content-width;
+                headers: Backend.headers;
+                rows: (root.narrow && !root.all-specs) ? Backend.compact-rows : Backend.rows;
+                label-w: root.label-w; min-col-w: root.min-col-w;
+            }
         }
         if Backend.headers.length > 0: Section { text: "Charts"; }
-        Charts { charts: Backend.charts; headers: Backend.headers; value-w: root.width < 420px ? 96px : 120px; }
+        Charts { charts: Backend.charts; headers: Backend.headers; value-w: root.width < 420px ? 92px : 120px; }
+        if Backend.headers.length > 0: Caption { text: "Modded numbers are estimates (est.). Best value per row is highlighted."; font-size: 11px; }
     }
 }
 
@@ -497,7 +581,7 @@ component DialogFrame inherits Rectangle {
                 Text { text: root.title; font-size: 18px; font-weight: 700; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; color: Palette.foreground; }
                 PButton { text: "Close"; width: 84px; clicked => { root.close(); } }
             }
-            if Backend.status != "": Text { text: Backend.status; font-size: 12px; wrap: word-wrap; color: #d9822b; }
+            if Backend.status != "": Text { text: Backend.status; font-size: 12px; wrap: word-wrap; color: Ui.warn; }
             ScrollView {
                 vertical-stretch: 1;
                 // never scroll sideways: content always fits the dialog width
@@ -508,6 +592,22 @@ component DialogFrame inherits Rectangle {
                 }
             }
         }
+    }
+}
+
+component NavItem inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    callback clicked();
+    accessible-role: tab;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
+    TouchArea { clicked => { root.clicked(); } }
+    Rectangle {
+        width: min(parent.width - 16px, 140px); height: 34px;
+        border-radius: 17px;
+        background: root.active ? Palette.accent-background.with-alpha(0.18) : transparent;
+        Text { text: root.text; font-size: 14px; font-weight: root.active ? 700 : 400; color: root.active ? Palette.accent-background : Palette.foreground.with-alpha(0.75); }
     }
 }
 
@@ -529,8 +629,9 @@ export component MainWindow inherits Window {
     property <length> avail-h: root.height - root.inset-top - root.inset-bottom;
     property <bool> phone: min(root.avail-w, root.avail-h) < 520px;
     property <bool> wide: root.avail-w >= 840px && !(root.phone && root.avail-h < 420px);
-    property <bool> phone-portrait: root.phone && root.avail-h > root.avail-w;
-    property <bool> phone-landscape: root.phone && root.avail-w >= root.avail-h;
+    property <bool> keyboard-up: root.virtual-keyboard-size.height > 0px;
+    // short landscape screens: tabs move into the top bar instead of taking a bottom bar
+    property <bool> tabs-on-top: !root.wide && root.avail-h < 480px;
     property <length> build-w: clamp(root.avail-w * 0.38, 360px, 460px);
 
     // Return keyboard focus to the root after a dialog or tab change so Escape / Android Back keep working.
@@ -558,44 +659,50 @@ export component MainWindow inherits Window {
             padding-left: root.inset-left;
             padding-right: root.inset-right;
             padding-bottom: root.inset-bottom;
-            // header + toolbar
+            // one compact top bar: name, unit switches, menu
             Rectangle {
                 background: Palette.alternate-background;
-                preferred-height: hv.preferred-height;
-                hv := VerticalLayout {
-                    padding: 8px; spacing: 6px;
-                    if !root.phone-landscape: HorizontalLayout {
-                        spacing: 8px;
-                        Text { text: "Pitlane"; font-size: 20px; font-weight: 800; vertical-alignment: center; color: Palette.accent-background; }
-                        Text { text: Backend.status; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; color: Palette.foreground.with-alpha(0.75); }
-                        PButton { text: "Menu"; width: 76px; clicked => { Backend.dialog = 6; } }
-                    }
-                    HorizontalLayout {
-                        spacing: 6px;
-                        PButton { text: Backend.units-text; horizontal-stretch: 1; clicked => { Backend.toggle-units(); } }
-                        PButton { text: Backend.power-text; horizontal-stretch: 1; clicked => { Backend.cycle-power(); } }
-                        PButton { text: Backend.wheel-text; horizontal-stretch: 1; clicked => { Backend.toggle-wheel(); } }
-                        if !root.phone: PButton { text: Backend.view-mode == 0 ? "Table" : "Cards"; horizontal-stretch: 1; clicked => { Backend.view-mode = 1 - Backend.view-mode; } }
-                        // landscape phones get one compact header row
-                        if root.phone-landscape && !root.wide: PButton { text: "Build"; active: root.tab == 0; horizontal-stretch: 1; clicked => { root.tab = 0; } }
-                        if root.phone-landscape && !root.wide: PButton { text: "Compare"; active: root.tab == 1; horizontal-stretch: 1; clicked => { root.tab = 1; } }
-                        if root.phone-landscape: PButton { text: "Menu"; width: 76px; clicked => { Backend.dialog = 6; } }
-                    }
-                    if !root.wide && !root.phone-landscape: HorizontalLayout {
-                        spacing: 6px;
-                        PButton { text: "Build"; active: root.tab == 0; horizontal-stretch: 1; clicked => { root.tab = 0; } }
-                        PButton { text: "Compare"; active: root.tab == 1; horizontal-stretch: 1; clicked => { root.tab = 1; } }
-                    }
+                height: Ui.touch + 8px;
+                HorizontalLayout {
+                    padding-left: 10px; padding-right: 4px; spacing: 4px;
+                    if root.avail-w >= 360px: Text { text: "Pitlane"; font-size: 18px; font-weight: 800; vertical-alignment: center; color: Palette.accent-background; }
+                    if root.tabs-on-top: Chip { text: "Build"; active: root.tab == 0; clicked => { root.tab = 0; } }
+                    if root.tabs-on-top: Chip { text: Backend.headers.length > 0 ? "Compare (" + Backend.headers.length + ")" : "Compare"; active: root.tab == 1; clicked => { root.tab = 1; } }
+                    Rectangle { horizontal-stretch: 1; }
+                    Chip { text: Backend.units-text; accessible-label: "Units: " + Backend.units-text; clicked => { Backend.toggle-units(); } }
+                    Chip { text: Backend.power-text; accessible-label: "Power unit: " + Backend.power-text; clicked => { Backend.cycle-power(); } }
+                    Chip { text: Backend.wheel-text; accessible-label: "Power measured at: " + Backend.wheel-text; clicked => { Backend.toggle-wheel(); } }
+                    Chip { text: "☰"; accessible-label: "Menu"; clicked => { Backend.dialog = 6; } }
                 }
             }
             if root.wide: HorizontalLayout {
                 vertical-stretch: 1;
-                BuildPanel { width: root.build-w; two-column-pickers: false; }
+                BuildPanel { width: root.build-w; }
                 Rectangle { width: 1px; background: Palette.border; }
-                ComparePanel { horizontal-stretch: 1; phone-portrait: false; phone-landscape: false; }
+                ComparePanel { horizontal-stretch: 1; narrow: false; }
             }
-            if !root.wide && root.tab == 0: BuildPanel { vertical-stretch: 1; two-column-pickers: root.avail-w >= 600px; }
-            if !root.wide && root.tab == 1: ComparePanel { vertical-stretch: 1; phone-portrait: root.phone-portrait; phone-landscape: root.phone-landscape; }
+            if !root.wide && root.tab == 0: BuildPanel { vertical-stretch: 1; }
+            if !root.wide && root.tab == 1: ComparePanel { vertical-stretch: 1; narrow: root.avail-w < 600px; }
+            // status messages: a slim bar that hides itself after a few seconds (tap to dismiss)
+            if Backend.status != "" && Backend.dialog == 0: Rectangle {
+                background: Palette.foreground.with-alpha(0.88);
+                min-height: Ui.touch;
+                TouchArea { clicked => { Backend.clear-status(); } }
+                HorizontalLayout {
+                    padding-left: 14px; padding-right: 14px;
+                    Text { text: Backend.status; font-size: 13px; vertical-alignment: center; wrap: word-wrap; color: Palette.background; }
+                }
+            }
+            // bottom navigation (thumb reach) on phones and tablets; hidden while typing
+            if !root.wide && !root.tabs-on-top && !root.keyboard-up: Rectangle {
+                height: 56px;
+                background: Palette.alternate-background;
+                Rectangle { y: 0px; height: 1px; background: Palette.border; }
+                HorizontalLayout {
+                    NavItem { text: "Build"; active: root.tab == 0; horizontal-stretch: 1; clicked => { root.tab = 0; } }
+                    NavItem { text: Backend.headers.length > 0 ? "Compare (" + Backend.headers.length + ")" : "Compare"; active: root.tab == 1; horizontal-stretch: 1; clicked => { root.tab = 1; } }
+                }
+            }
         }
 
         // ---------------- dialogs (inside the FocusScope so Back/Escape reach it) ----------------

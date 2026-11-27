@@ -24,6 +24,7 @@ const SLOT_COLORS: [(u8, u8, u8); MAX_SLOTS] = [(0x4e, 0x79, 0xa7), (0xf2, 0x8e,
 const DATA_NOTE: &str = "Data accuracy: figures are approximate. 'verified' = matches commonly published factory specs as recalled by the author (not machine-checked); 'estimated' = approximate. 0-60 times and weights are the least reliable. Mod gains are typical ranges, not measurements.";
 const SEARCH_DEBOUNCE: Duration = Duration::from_millis(120);
 const SAVE_DEBOUNCE: Duration = Duration::from_millis(1500);
+const STATUS_TIMEOUT: Duration = Duration::from_secs(5);
 
 // ---------------------------------------------------------------- platform helpers
 
@@ -103,6 +104,7 @@ struct Models {
     trims: Rc<VecModel<SharedString>>,
     slots: Rc<VecModel<SlotInfo>>,
     headers: Rc<VecModel<SlotInfo>>,
+    stats: Rc<VecModel<StatData>>,
     gain: Rc<VecModel<ModRow>>,
     neg: Rc<VecModel<ModRow>>,
     rows: Nested,
@@ -123,6 +125,7 @@ impl Models {
         b.set_trims(mrc(&self.trims));
         b.set_slots(mrc(&self.slots));
         b.set_headers(mrc(&self.headers));
+        b.set_stats(mrc(&self.stats));
         b.set_gain_mods(mrc(&self.gain));
         b.set_neg_mods(mrc(&self.neg));
         b.set_rows(mrc(&self.rows.outer));
@@ -257,55 +260,67 @@ fn wf_for(car: &Car, ev: &Eval, s: &Settings) -> f32 {
     }
 }
 
-fn stock_line(car: &Car, s: &Settings) -> String {
+/// Four headline tiles for the selected car (stock, or modded with the change from stock).
+fn stat_tiles(car: &Car, ev: &Eval, s: &Settings) -> Vec<StatData> {
     let f = Fmt { s: *s };
-    let wf = if s.wheel { wheel_factor(car, car.aspiration, &s.loss) } else { 1.0 };
-    let eng = if car.aspiration == Aspiration::EV { "Electric".to_string() } else { format!("{:.1} L {}-cyl {}", car.displacement_l, car.cylinders, car.aspiration.label()) };
-    format!(
-        "Stock{}: {:.0} {} - {:.0} {} - {} {:.1} s ({}) - {:.0} {} - {} - {} - {} [{}]",
-        if s.wheel { " (wheel, est.)" } else { "" },
-        f.hp(car.hp as f32, wf),
-        power_label(s.power),
-        f.tq(car.torque as f32, wf),
-        torque_label(s.system),
-        accel_label(s.system),
-        accel_from_60(s.system, car.zero_sixty),
-        car.zero_sixty_source.label(),
-        weight_from_lbs(s.system, car.weight_lbs as f32),
-        weight_label(s.system),
-        car.drivetrain.label(),
-        car.transmission,
-        eng,
-        car.confidence.label()
-    )
+    let wf = wf_for(car, ev, s);
+    let wf0 = if s.wheel { wheel_factor(car, car.aspiration, &s.loss) } else { 1.0 };
+    let tile = |label: &str, now: f32, stock: f32, dec: usize, unit: &str, higher_better: bool| {
+        let changed = ev.modded && (now - stock).abs() >= 0.5 * 10f32.powi(-(dec as i32));
+        StatData {
+            label: ss(label),
+            value: ss(format!("{now:.dec$} {unit}")),
+            delta: ss(if changed { format!("{} est.", Fmt::signed(now - stock, dec)) } else { String::new() }),
+            changed,
+            better: changed && ((now > stock) == higher_better),
+        }
+    };
+    vec![
+        tile(if s.wheel { "wheel power" } else { "power" }, f.hp(ev.hp.typ, wf), f.hp(car.hp as f32, wf0), 0, power_label(s.power), true),
+        tile("torque", f.tq(ev.torque.typ, wf), f.tq(car.torque as f32, wf0), 0, torque_label(s.system), true),
+        tile(accel_label(s.system), accel_from_60(s.system, ev.zero_sixty.typ), accel_from_60(s.system, car.zero_sixty), 1, "s", false),
+        tile("weight", weight_from_lbs(s.system, ev.weight_lbs), weight_from_lbs(s.system, car.weight_lbs as f32), 0, weight_label(s.system), false),
+    ]
 }
 
-fn mod_line(car: &Car, ev: &Eval, s: &Settings) -> String {
+/// One short line of secondary specs, e.g. "RWD · 6MT/10AT · 5.0 L V8 · 0-60 magazine · verified".
+fn detail_line(car: &Car) -> String {
+    let eng = match car.aspiration {
+        Aspiration::EV => "Electric".to_string(),
+        a => {
+            let layout = match car.cylinders {
+                6 | 8 | 10 | 12 => format!("V{}", car.cylinders),
+                n => format!("{n}-cyl"),
+            };
+            if a == Aspiration::NA {
+                format!("{:.1} L {layout}", car.displacement_l)
+            } else {
+                format!("{:.1} L {layout} {}", car.displacement_l, a.label().to_lowercase())
+            }
+        }
+    };
+    format!("{} · {} · {} · 0-60 {} · {}", car.drivetrain.label(), car.transmission, eng, car.zero_sixty_source.label(), car.confidence.label())
+}
+
+/// Range note shown only when modded.
+fn mod_note(car: &Car, ev: &Eval, s: &Settings) -> String {
     if !ev.modded {
         return String::new();
     }
     let f = Fmt { s: *s };
     let wf = wf_for(car, ev, s);
-    let wf0 = if s.wheel { wheel_factor(car, car.aspiration, &s.loss) } else { 1.0 };
-    let hp0 = f.hp(car.hp as f32, wf0);
-    let (lo, typ, hi) = (f.hp(ev.hp.min, wf), f.hp(ev.hp.typ, wf), f.hp(ev.hp.max, wf));
-    let z0 = accel_from_60(s.system, car.zero_sixty);
-    let z1 = accel_from_60(s.system, ev.zero_sixty.typ);
+    // print a range only when its ends differ at display precision
+    let range = |lo: f32, hi: f32, dec: usize| {
+        let (a, b) = (format!("{lo:.dec$}"), format!("{hi:.dec$}"));
+        if a == b { a } else { format!("{a}-{b}") }
+    };
+    let z = |v: f32| accel_from_60(s.system, v);
     format!(
-        "Modded (est.): {:.0} {} ({}, range {:.0}-{:.0}) - {:.0} {} ({}) - {} {:.1} s ({}) - {:.0} {}",
-        typ,
+        "With mods (estimate): {} {}, {} {} s",
+        range(f.hp(ev.hp.min, wf), f.hp(ev.hp.max, wf), 0),
         power_label(s.power),
-        Fmt::signed(typ - hp0, 0),
-        lo,
-        hi,
-        f.tq(ev.torque.typ, wf),
-        torque_label(s.system),
-        Fmt::signed(f.tq(ev.torque.typ, wf) - f.tq(car.torque as f32, wf0), 0),
         accel_label(s.system),
-        z1,
-        Fmt::signed(z1 - z0, 1),
-        weight_from_lbs(s.system, ev.weight_lbs),
-        weight_label(s.system),
+        range(z(ev.zero_sixty.min), z(ev.zero_sixty.max), 1),
     )
 }
 
@@ -440,15 +455,19 @@ fn refresh(ui: &MainWindow, c: &Ctx) {
         b.set_trim_index(trims.iter().position(|t| t.id == car.id).unwrap_or(0) as i32);
 
         b.set_selected_title(ss(car_title(slot.year, car)));
-        b.set_stock_line(ss(stock_line(car, &s)));
-        b.set_mod_line(ss(mod_line(car, &view.eval, &s)));
+        sync(&m.stats, stat_tiles(car, &view.eval, &s));
+        b.set_detail_line(ss(detail_line(car)));
+        b.set_mod_note(ss(mod_note(car, &view.eval, &s)));
+        b.set_active_mods(slot.mods.len() as i32);
         b.set_is_fav(c.state.favorites.iter().any(|f| f.car_id == car.id && f.year == slot.year));
         sync(&m.gain, mod_rows(car, slot, &view.eval, ModKind::Gain, &s));
         sync(&m.neg, mod_rows(car, slot, &view.eval, ModKind::Negative, &s));
     } else {
         b.set_selected_title(ss("No cars yet"));
-        b.set_stock_line(ss(""));
-        b.set_mod_line(ss(""));
+        sync(&m.stats, vec![]);
+        b.set_detail_line(ss(""));
+        b.set_mod_note(ss(""));
+        b.set_active_mods(0);
     }
 
     // comparison table + charts
@@ -589,22 +608,38 @@ fn schedule_save(saver: &Rc<Timer>, cx: &Shared) {
     });
 }
 
+/// Hides a status message a few seconds after it was shown.
+fn schedule_status_clear(timer: &Rc<Timer>, cx: &Shared, ui: slint::Weak<MainWindow>) {
+    let cx = Rc::downgrade(cx);
+    timer.start(TimerMode::SingleShot, STATUS_TIMEOUT, move || {
+        let (Some(cx), Some(w)) = (cx.upgrade(), ui.upgrade()) else { return };
+        if let Ok(mut c) = cx.try_borrow_mut() {
+            c.status.clear();
+            w.global::<Backend>().set_status(ss(""));
+        };
+    });
+}
+
 macro_rules! hook {
-    ($ui:ident, $ctx:ident, $saver:ident, $reg:ident, |$w:ident, $c:ident $(, $a:ident : $t:ty)*| $body:block) => {{
+    ($ui:ident, $ctx:ident, $timers:ident, $reg:ident, |$w:ident, $c:ident $(, $a:ident : $t:ty)*| $body:block) => {{
         let wk = $ui.as_weak();
         let cx = $ctx.clone();
-        let sv = $saver.clone();
+        let tm = $timers.clone();
         $ui.global::<Backend>().$reg(move |$($a : $t),*| {
             let Some($w) = wk.upgrade() else { return };
-            let dirty = {
+            let (dirty, new_status) = {
                 #[allow(unused_mut)]
                 let Ok(mut $c) = cx.try_borrow_mut() else { return };
+                let before = $c.status.clone();
                 #[allow(clippy::redundant_closure_call)]
                 (|| $body)();
-                $c.dirty
+                ($c.dirty, !$c.status.is_empty() && $c.status != before)
             };
             if dirty {
-                schedule_save(&sv, &cx);
+                schedule_save(&tm.0, &cx);
+            }
+            if new_status {
+                schedule_status_clear(&tm.1, &cx, wk.clone());
             }
         });
     }};
@@ -632,6 +667,8 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
     let ctx: Shared = Rc::new(RefCell::new(ctx));
     let saver = Rc::new(Timer::default());
     let searcher = Rc::new(Timer::default());
+    // (autosave, status auto-hide)
+    let timers = Rc::new((saver.clone(), Rc::new(Timer::default())));
 
     let ui = match MainWindow::new() {
         Ok(u) => u,
@@ -642,11 +679,11 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
     };
     ctx.borrow().m.bind(&ui.global::<Backend>());
 
-    hook!(ui, ctx, saver, on_select_slot, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_select_slot, |w, c, i: i32| {
         c.sel = (i.max(0) as usize).min(c.state.slots.len().saturating_sub(1));
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_add_slot, |w, c| {
+    hook!(ui, ctx, timers, on_add_slot, |w, c| {
         if c.state.slots.len() >= MAX_SLOTS {
             c.status = "Maximum of 5 cars".into();
         } else {
@@ -664,7 +701,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_duplicate_slot, |w, c| {
+    hook!(ui, ctx, timers, on_duplicate_slot, |w, c| {
         if c.state.slots.len() >= MAX_SLOTS {
             c.status = "Maximum of 5 cars".into();
         } else if let Some(cur) = c.state.slots.get(c.sel).cloned() {
@@ -676,7 +713,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_remove_slot, |w, c| {
+    hook!(ui, ctx, timers, on_remove_slot, |w, c| {
         if !c.state.slots.is_empty() {
             let i = c.sel.min(c.state.slots.len() - 1);
             c.state.slots.remove(i);
@@ -685,7 +722,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_year_picked, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_year_picked, |w, c, i: i32| {
         let year = year_of_index(i);
         if let Some(cur) = c.car(c.sel).cloned() {
             // keeps make/model/trim when they exist for the new year, otherwise resets the
@@ -698,7 +735,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_make_picked, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_make_picked, |w, c, i: i32| {
         if let Some(sl) = c.state.slots.get(c.sel).cloned() {
             let pick = c.db.makes_for_year(sl.year).get(i.max(0) as usize).map(|m| m.to_string());
             // a new make resets model and trim to that make's first valid ones for the year
@@ -708,7 +745,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_model_picked, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_model_picked, |w, c, i: i32| {
         if let (Some(sl), Some(cur)) = (c.state.slots.get(c.sel).cloned(), c.car(c.sel).cloned()) {
             let pick = c.db.models_for(sl.year, &cur.make).get(i.max(0) as usize).map(|m| m.to_string());
             if let Some(car) = c.resolve(sl.year, Some(&cur.make), pick.as_deref(), None) {
@@ -717,7 +754,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_trim_picked, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_trim_picked, |w, c, i: i32| {
         if let (Some(sl), Some(cur)) = (c.state.slots.get(c.sel).cloned(), c.car(c.sel).cloned()) {
             let pick = c.db.trims_for(sl.year, &cur.make, &cur.model).get(i.max(0) as usize).map(|t| (*t).clone());
             if let Some(car) = pick {
@@ -726,7 +763,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_mod_toggled, |w, c, id: SharedString, on: bool| {
+    hook!(ui, ctx, timers, on_mod_toggled, |w, c, id: SharedString, on: bool| {
         let sel = c.sel;
         if let Some(sl) = c.state.slots.get_mut(sel) {
             sl.mods.retain(|m| m.id != id.as_str());
@@ -738,7 +775,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         c.dirty = true;
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_mod_value, |w, c, id: SharedString, v: f32| {
+    hook!(ui, ctx, timers, on_mod_value, |w, c, id: SharedString, v: f32| {
         let step = mod_defs().iter().find(|d| d.id == id.as_str()).and_then(|d| d.slider.as_ref().map(|s| s.step)).unwrap_or(1.0).max(f32::EPSILON);
         let sel = c.sel;
         let mut changed = false;
@@ -779,7 +816,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
             });
         });
     }
-    hook!(ui, ctx, saver, on_search_pick, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_search_pick, |w, c, i: i32| {
         if let Some(h) = c.hits.get(i.max(0) as usize).cloned() {
             if let Some(car) = c.db.find(&h.car_id).cloned() {
                 c.assign(h.year, &car);
@@ -790,12 +827,12 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         w.global::<Backend>().set_search_text(ss(""));
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_toggle_units, |w, c| {
+    hook!(ui, ctx, timers, on_toggle_units, |w, c| {
         c.state.settings.system = if c.state.settings.system == UnitSystem::Imperial { UnitSystem::Metric } else { UnitSystem::Imperial };
         c.dirty = true;
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_cycle_power, |w, c| {
+    hook!(ui, ctx, timers, on_cycle_power, |w, c| {
         c.state.settings.power = match c.state.settings.power {
             PowerUnit::Hp => PowerUnit::Kw,
             PowerUnit::Kw => PowerUnit::Ps,
@@ -804,12 +841,12 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         c.dirty = true;
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_toggle_wheel, |w, c| {
+    hook!(ui, ctx, timers, on_toggle_wheel, |w, c| {
         c.state.settings.wheel = !c.state.settings.wheel;
         c.dirty = true;
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_toggle_fav, |w, c| {
+    hook!(ui, ctx, timers, on_toggle_fav, |w, c| {
         if let Some(sl) = c.state.slots.get(c.sel).cloned() {
             let before = c.state.favorites.len();
             c.state.favorites.retain(|f| !(f.car_id == sl.car_id && f.year == sl.year));
@@ -820,7 +857,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_pick_fav, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_pick_fav, |w, c, i: i32| {
         if let Some(f) = c.state.favorites.get(i.max(0) as usize).cloned() {
             match c.db.find(&f.car_id).cloned() {
                 Some(car) => {
@@ -833,7 +870,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_save_comparison, |w, c| {
+    hook!(ui, ctx, timers, on_save_comparison, |w, c| {
         let typed = w.global::<Backend>().get_save_name().trim().to_string();
         let name = if typed.is_empty() { format!("Comparison {}", c.state.saved.len() + 1) } else { typed };
         let slots = c.state.slots.clone();
@@ -847,7 +884,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         persist(&mut c);
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_load_saved, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_load_saved, |w, c, i: i32| {
         if let Some(sv) = c.state.saved.get(i.max(0) as usize).cloned() {
             let wanted = sv.slots.len();
             c.state.slots = sv.slots;
@@ -861,7 +898,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_delete_saved, |w, c, i: i32| {
+    hook!(ui, ctx, timers, on_delete_saved, |w, c, i: i32| {
         let i = i.max(0) as usize;
         if i < c.state.saved.len() {
             c.state.saved.remove(i);
@@ -869,7 +906,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_export_open, |w, c, kind: i32| {
+    hook!(ui, ctx, timers, on_export_open, |w, c, kind: i32| {
         c.export_kind = kind.clamp(0, 1) as u8;
         let text = export_text(&c);
         let b = w.global::<Backend>();
@@ -877,7 +914,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         b.set_export_kind(c.export_kind as i32);
         b.set_dialog(2);
     });
-    hook!(ui, ctx, saver, on_copy_export, |w, c| {
+    hook!(ui, ctx, timers, on_copy_export, |w, c| {
         let text = export_text(&c);
         c.status = match clipboard_set(&text) {
             Ok(()) => "Copied to clipboard".into(),
@@ -885,7 +922,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         };
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_save_export, |w, c| {
+    hook!(ui, ctx, timers, on_save_export, |w, c| {
         let text = export_text(&c);
         let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
         let name = format!("pitlane-{stamp}.{}", if c.export_kind == 1 { "csv" } else { "txt" });
@@ -915,7 +952,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
             });
         });
     }
-    hook!(ui, ctx, saver, on_open_edit, |w, c, new_car: bool| {
+    hook!(ui, ctx, timers, on_open_edit, |w, c, new_car: bool| {
         if !new_car && c.car(c.sel).is_none() {
             c.status = "Add a car first (search, or tap +)".into();
             w.global::<Backend>().set_dialog(0);
@@ -926,7 +963,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         fill_edit(&w, &c, new_car);
         w.global::<Backend>().set_dialog(3);
     });
-    hook!(ui, ctx, saver, on_edit_save, |w, c, as_new: bool| {
+    hook!(ui, ctx, timers, on_edit_save, |w, c, as_new: bool| {
         let as_new = as_new || c.edit_new;
         let Some((year_now, base)) = c.car_or_starter() else { return };
         match read_edit(&w, &base, as_new, year_now) {
@@ -947,7 +984,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_edit_reset, |w, c| {
+    hook!(ui, ctx, timers, on_edit_reset, |w, c| {
         if let Some(id) = c.car(c.sel).map(|car| car.id.to_string()) {
             let mut ov = c.db.overrides().clone();
             ov.remove(&id);
@@ -963,12 +1000,12 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_overrides_open, |w, c| {
+    hook!(ui, ctx, timers, on_overrides_open, |w, c| {
         let b = w.global::<Backend>();
         b.set_overrides_text(ss(c.db.overrides().to_text().unwrap_or_else(|e| format!("// could not serialize: {e}"))));
         b.set_dialog(4);
     });
-    hook!(ui, ctx, saver, on_overrides_copy, |w, c| {
+    hook!(ui, ctx, timers, on_overrides_copy, |w, c| {
         let text = w.global::<Backend>().get_overrides_text().to_string();
         c.status = match clipboard_set(&text) {
             Ok(()) => "Overrides copied".into(),
@@ -976,7 +1013,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         };
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_overrides_import, |w, c| {
+    hook!(ui, ctx, timers, on_overrides_import, |w, c| {
         let text = w.global::<Backend>().get_overrides_text().to_string();
         match Overrides::from_text(&text) {
             Ok(ov) => match c.store.save_overrides(&ov) {
@@ -993,7 +1030,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_settings_save, |w, c| {
+    hook!(ui, ctx, timers, on_settings_save, |w, c| {
         let b = w.global::<Backend>();
         let p = |s: SharedString| s.trim().parse::<f32>().ok().filter(|v| (0.0..=60.0).contains(v));
         match (p(b.get_loss_2wd_man()), p(b.get_loss_2wd_auto()), p(b.get_loss_awd_man()), p(b.get_loss_awd_auto()), p(b.get_loss_ev())) {
@@ -1007,7 +1044,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         }
         refresh(&w, &c);
     });
-    hook!(ui, ctx, saver, on_clear_status, |w, c| {
+    hook!(ui, ctx, timers, on_clear_status, |w, c| {
         c.status.clear();
         refresh(&w, &c);
     });
@@ -1034,7 +1071,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         });
     }
     // Keep the state alive as long as the caller holds the handle.
-    let keep: Rc<dyn std::any::Any> = Rc::new((ctx, saver, searcher));
+    let keep: Rc<dyn std::any::Any> = Rc::new((ctx, saver, searcher, timers));
     Some((ui, keep))
 }
 
@@ -1062,7 +1099,7 @@ pub fn run_with_dir(dir: PathBuf) {
     if let Err(e) = ui.run() {
         eprintln!("Pitlane: event loop error: {e}");
     }
-    if let Some((ctx, _, _)) = keep.downcast_ref::<(Shared, Rc<Timer>, Rc<Timer>)>() {
+    if let Some((ctx, _, _, _)) = keep.downcast_ref::<(Shared, Rc<Timer>, Rc<Timer>, Rc<(Rc<Timer>, Rc<Timer>)>)>() {
         if let Ok(mut c) = ctx.try_borrow_mut() {
             persist(&mut c);
         }

@@ -113,6 +113,10 @@ fn app_flows() {
     b.invoke_mod_value("nitrous".into(), 112.0);
     let n = b.get_gain_mods().iter().find(|m| m.id == "nitrous").unwrap();
     assert!(n.enabled && n.value == 100.0, "snapped to the 25 hp step: {}", n.value);
+    assert_eq!(b.get_active_mods(), 1);
+    let power = b.get_stats().row_data(0).unwrap();
+    assert!(power.changed && power.better && power.delta.starts_with('+'), "{power:?}");
+    assert!(b.get_mod_note().starts_with("With mods"));
     assert!(b.get_rows().iter().next().unwrap().cells.iter().any(|c| c.best), "modded copy now wins");
 
     // --- search (debounced)
@@ -142,7 +146,9 @@ fn app_flows() {
     b.invoke_open_edit(false);
     b.set_ed_hp("250".into());
     b.invoke_edit_save(false);
-    assert!(b.get_stock_line().starts_with("Stock: 250 hp"), "{}", b.get_stock_line());
+    let power = b.get_stats().row_data(0).unwrap();
+    // this slot still carries the 100 hp nitrous shot (95 typical): the overridden 250 hp is the new stock
+    assert_eq!((power.value.as_str(), power.delta.as_str()), ("345 hp", "+95 est."));
     // custom car with a new make
     b.invoke_open_edit(true);
     b.set_ed_make("Pitlane Motors".into());
