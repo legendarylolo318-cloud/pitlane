@@ -10,6 +10,9 @@ Compare up to 5 cars (US market, 1990-2026), stack mods, and see estimated modde
 </p>
 
 ## Features
+* **Drivetrain per trim**: trims sold with more than one drivetrain (2WD / 4WD trucks, optional AWD on sedans and
+  crossovers) get a drivetrain switch under the engine picker, with their own weight and 0-60. Search understands
+  "awd", "4wd", "4x4" and "2wd".
 * **Cascading pickers**: Year → Make → Model → Trim. Changing the year keeps make/model/trim when they still exist that year,
   otherwise resets the first level that doesn't. Changing the make resets model and trim.
 * **Up to 5 cars**: add, duplicate (stock vs. modded comparisons), remove. The best value per row is highlighted (nothing is

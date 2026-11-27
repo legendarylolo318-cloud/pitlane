@@ -32,6 +32,9 @@ export global Backend {
     in-out property <int> model-index;
     in property <[string]> trims;
     in-out property <int> trim-index;
+    // drivetrains the selected trim was sold with (empty or one entry: no choice to show)
+    in property <[string]> drives;
+    in-out property <int> drive-index;
     in property <bool> has-car;
     in property <string> selected-title;
     in property <[StatData]> stats;
@@ -95,6 +98,7 @@ export global Backend {
     callback make-picked(int);
     callback model-picked(int);
     callback trim-picked(int);
+    callback drive-picked(int);
     callback mod-toggled(string, bool);
     callback mod-value(string, float);
     callback search-edited(string);
@@ -187,6 +191,7 @@ component Chip inherits Rectangle {
 component Segmented inherits Rectangle {
     in property <[string]> options;
     in-out property <int> current;
+    callback picked(int);
     min-height: Ui.touch;
     HorizontalLayout {
         padding-top: 7px; padding-bottom: 7px;
@@ -196,8 +201,8 @@ component Segmented inherits Rectangle {
             background: i == root.current ? Palette.accent-background : Palette.alternate-background;
             accessible-role: button;
             accessible-label: o;
-            accessible-action-default => { root.current = i; }
-            TouchArea { y: -7px; height: parent.height + 14px; clicked => { root.current = i; } }
+            accessible-action-default => { root.current = i; root.picked(i); }
+            TouchArea { y: -7px; height: parent.height + 14px; clicked => { root.current = i; root.picked(i); } }
             Text { text: o; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; color: i == root.current ? Palette.accent-foreground : Palette.foreground; }
         }
     }
@@ -481,6 +486,11 @@ component BuildPanel inherits ScrollView {
             }
             Picker { model: Backend.models; current-index <=> Backend.model-index; accessible-label: "Model"; picked(i) => { Backend.model-picked(i); } }
             Picker { model: Backend.trims; current-index <=> Backend.trim-index; accessible-label: "Trim / engine"; picked(i) => { Backend.trim-picked(i); } }
+            // only for trims sold with more than one drivetrain (e.g. 2WD / 4WD trucks)
+            if Backend.drives.length > 1: Segmented {
+                options: Backend.drives; current <=> Backend.drive-index;
+                picked(i) => { Backend.drive-picked(i); }
+            }
             // headline numbers
             HorizontalLayout {
                 spacing: 6px;

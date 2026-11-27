@@ -102,6 +102,7 @@ struct Models {
     makes: Rc<VecModel<SharedString>>,
     models: Rc<VecModel<SharedString>>,
     trims: Rc<VecModel<SharedString>>,
+    drives: Rc<VecModel<SharedString>>,
     slots: Rc<VecModel<SlotInfo>>,
     headers: Rc<VecModel<SlotInfo>>,
     stats: Rc<VecModel<StatData>>,
@@ -123,6 +124,7 @@ impl Models {
         b.set_makes(mrc(&self.makes));
         b.set_models(mrc(&self.models));
         b.set_trims(mrc(&self.trims));
+        b.set_drives(mrc(&self.drives));
         b.set_slots(mrc(&self.slots));
         b.set_headers(mrc(&self.headers));
         b.set_stats(mrc(&self.stats));
@@ -193,13 +195,14 @@ impl Ctx {
 
     /// Resolve the picker cascade: keep the preferred make/model/trim when they exist for `year`,
     /// otherwise fall back to the first valid entry at that level (and everything below it).
-    fn resolve(&self, year: u16, make: Option<&str>, model: Option<&str>, trim: Option<&str>) -> Option<Car> {
+    fn resolve(&self, year: u16, make: Option<&str>, model: Option<&str>, trim: Option<&str>, drive: Option<Drivetrain>) -> Option<Car> {
         let makes = self.db.makes_for_year(year);
         let mk = make.filter(|m| makes.contains(m)).or_else(|| makes.first().copied())?;
         let models = self.db.models_for(year, mk);
         let md = model.filter(|m| models.contains(m)).or_else(|| models.first().copied())?;
-        let trims = self.db.trims_for(year, mk, md);
-        trims.iter().find(|c| Some(&*c.trim) == trim).or_else(|| trims.first()).map(|c| (*c).clone())
+        let groups = trim_groups(&self.db.trims_for(year, mk, md));
+        let group = groups.iter().find(|g| Some(&*g[0].trim) == trim).or_else(|| groups.first())?;
+        pick_drive(group, drive).cloned()
     }
 
     /// Puts `car` into the selected slot, or adds the first slot when the comparison is empty.
@@ -383,17 +386,36 @@ fn mod_rows(car: &Car, slot: &SlotState, full: &Eval, kind: ModKind, s: &Setting
 
 /// Trim names shown in the picker; a generation is appended when two trims share a name
 /// (e.g. a model year sold in two generations).
-fn trim_labels(trims: &[&Car]) -> Vec<SharedString> {
-    trims
+fn trim_labels(groups: &[Vec<&Car>]) -> Vec<SharedString> {
+    groups
         .iter()
-        .map(|t| {
-            if trims.iter().filter(|o| o.trim == t.trim).count() > 1 {
+        .map(|g| {
+            let t = g[0];
+            if groups.iter().filter(|o| o[0].trim == t.trim).count() > 1 {
                 ss(format!("{} - {}", t.trim, t.generation))
             } else {
                 ss(&*t.trim)
             }
         })
         .collect()
+}
+
+/// Groups a model year's cars into trims: the drivetrain variants of one trim (same generation
+/// and trim name) form one group, in data order (the base drivetrain first).
+fn trim_groups<'a>(cars: &[&'a Car]) -> Vec<Vec<&'a Car>> {
+    let mut groups: Vec<Vec<&Car>> = Vec::new();
+    for c in cars {
+        match groups.iter_mut().find(|g| g[0].trim == c.trim && g[0].generation == c.generation) {
+            Some(g) => g.push(c),
+            None => groups.push(vec![c]),
+        }
+    }
+    groups
+}
+
+/// Picks the car of a trim group, keeping the wanted drivetrain when that trim offers it.
+fn pick_drive<'a>(group: &[&'a Car], want: Option<Drivetrain>) -> Option<&'a Car> {
+    group.iter().find(|c| Some(c.drivetrain) == want).or_else(|| group.first()).copied()
 }
 
 fn slot_color(i: usize) -> Color {
@@ -450,9 +472,14 @@ fn refresh(ui: &MainWindow, c: &Ctx) {
         let models = c.db.models_for(slot.year, &car.make);
         sync(&m.models, models.iter().map(ss).collect());
         b.set_model_index(models.iter().position(|x| *x == car.model).unwrap_or(0) as i32);
-        let trims = c.db.trims_for(slot.year, &car.make, &car.model);
-        sync(&m.trims, trim_labels(&trims));
-        b.set_trim_index(trims.iter().position(|t| t.id == car.id).unwrap_or(0) as i32);
+        let groups = trim_groups(&c.db.trims_for(slot.year, &car.make, &car.model));
+        sync(&m.trims, trim_labels(&groups));
+        let gi = groups.iter().position(|g| g.iter().any(|t| t.id == car.id)).unwrap_or(0);
+        b.set_trim_index(gi as i32);
+        // drivetrain choice, only when this trim was sold with more than one
+        let drives = groups.get(gi).map(|g| g.iter().map(|t| ss(t.drivetrain.label())).collect()).unwrap_or_default();
+        sync(&m.drives, drives);
+        b.set_drive_index(groups.get(gi).and_then(|g| g.iter().position(|t| t.id == car.id)).unwrap_or(0) as i32);
 
         b.set_selected_title(ss(car_title(slot.year, car)));
         sync(&m.stats, stat_tiles(car, &view.eval, &s));
@@ -727,7 +754,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         if let Some(cur) = c.car(c.sel).cloned() {
             // keeps make/model/trim when they exist for the new year, otherwise resets the
             // first level that does not (and everything below it)
-            if let Some(car) = c.resolve(year, Some(&cur.make), Some(&cur.model), Some(&cur.trim)) {
+            if let Some(car) = c.resolve(year, Some(&cur.make), Some(&cur.model), Some(&cur.trim), Some(cur.drivetrain)) {
                 c.assign(year, &car);
             } else {
                 c.status = format!("No cars for {year}");
@@ -739,7 +766,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
         if let Some(sl) = c.state.slots.get(c.sel).cloned() {
             let pick = c.db.makes_for_year(sl.year).get(i.max(0) as usize).map(|m| m.to_string());
             // a new make resets model and trim to that make's first valid ones for the year
-            if let Some(car) = c.resolve(sl.year, pick.as_deref(), None, None) {
+            if let Some(car) = c.resolve(sl.year, pick.as_deref(), None, None, None) {
                 c.assign(sl.year, &car);
             }
         }
@@ -748,7 +775,7 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
     hook!(ui, ctx, timers, on_model_picked, |w, c, i: i32| {
         if let (Some(sl), Some(cur)) = (c.state.slots.get(c.sel).cloned(), c.car(c.sel).cloned()) {
             let pick = c.db.models_for(sl.year, &cur.make).get(i.max(0) as usize).map(|m| m.to_string());
-            if let Some(car) = c.resolve(sl.year, Some(&cur.make), pick.as_deref(), None) {
+            if let Some(car) = c.resolve(sl.year, Some(&cur.make), pick.as_deref(), None, None) {
                 c.assign(sl.year, &car);
             }
         }
@@ -756,8 +783,19 @@ pub fn build(dir: PathBuf) -> Option<(MainWindow, Rc<dyn std::any::Any>)> {
     });
     hook!(ui, ctx, timers, on_trim_picked, |w, c, i: i32| {
         if let (Some(sl), Some(cur)) = (c.state.slots.get(c.sel).cloned(), c.car(c.sel).cloned()) {
-            let pick = c.db.trims_for(sl.year, &cur.make, &cur.model).get(i.max(0) as usize).map(|t| (*t).clone());
-            if let Some(car) = pick {
+            let groups = trim_groups(&c.db.trims_for(sl.year, &cur.make, &cur.model));
+            // a new engine keeps the chosen drivetrain when it is offered with it
+            if let Some(car) = groups.get(i.max(0) as usize).and_then(|g| pick_drive(g, Some(cur.drivetrain))).cloned() {
+                c.assign(sl.year, &car);
+            }
+        }
+        refresh(&w, &c);
+    });
+    hook!(ui, ctx, timers, on_drive_picked, |w, c, i: i32| {
+        if let (Some(sl), Some(cur)) = (c.state.slots.get(c.sel).cloned(), c.car(c.sel).cloned()) {
+            let groups = trim_groups(&c.db.trims_for(sl.year, &cur.make, &cur.model));
+            let group = groups.iter().find(|g| g.iter().any(|t| t.id == cur.id));
+            if let Some(car) = group.and_then(|g| g.get(i.max(0) as usize)).map(|t| (*t).clone()) {
                 c.assign(sl.year, &car);
             }
         }

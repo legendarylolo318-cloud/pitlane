@@ -49,7 +49,7 @@ fn main() {
     if !empty { std::fs::write(
         data.join("state.ron"),
         r#"(slots: [
-            (year: 2018, car_id: "ford-mustang-s550-2015-2023-gt-5-0-2018", mods: [(id: "intake", value: 0.0), (id: "tune1", value: 0.0), (id: "nitrous", value: 75.0)]),
+            (year: 2008, car_id: "ford-ranger-4th-gen-1998-2011-4-0-sohc-v6", mods: [(id: "intake", value: 0.0), (id: "tune1", value: 0.0), (id: "nitrous", value: 75.0)]),
             (year: 2017, car_id: "honda-civic-10th-gen-2016-21-type-r-2-0t-fk8", mods: []),
             (year: 2021, car_id: "toyota-supra-a90-gr-supra-2020-3-0-b58-2021", mods: []),
         ])"#,

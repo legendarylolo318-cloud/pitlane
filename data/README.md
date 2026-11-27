@@ -45,6 +45,7 @@ trim/engine combination valid for that generation's years.
 | `rl` | redline rpm (`0` = unknown) | no |
 | `f` | fuel: `Gas` (default), `Diesel`, `Hybrid`, `Electric`, `Flex` | no |
 | `conf` | `Verified` or `Estimated` (default) | no |
+| `alt` | other drivetrains the trim was sold with, e.g. `alt:[(dt:FourWD)]` or `alt:[(dt:AWD, y0:2020, w:3450, z:7.4)]`. Each becomes its own car (id `<base id>-4wd` etc.). `w` / `z` default to estimates from the base trim (+150 lb for AWD on a car, +250 lb for 4WD over 4000 lb, 0-60 scaled by weight); `y0` / `y1` narrow the years | no |
 | `y0`, `y1` (inside a trim) | narrows the generation's years for this trim only (e.g. an engine offered for part of the run) | no |
 
 The unique `id` is generated: `make-model-generation-trim` (slugified). Duplicate ids fail the build.

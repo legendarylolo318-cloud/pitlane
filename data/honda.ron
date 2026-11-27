@@ -73,11 +73,11 @@
   (n:"1.5 (3rd gen)", code:"L15B7", d:1.5, c:4, a:NA, hp:130, hpr:6600, tq:114, tqr:4600, z:8.2, zs:Mag, w:2540, dt:FWD, tx:"6MT/CVT", rl:6800, y0:2015),
  ]),
  (make:"Honda", model:"CR-V", gen:"1st-6th gen", y0:1997, y1:2026, trims:[
-  (n:"2.0 (1st gen)", code:"B20B", d:2.0, c:4, a:NA, hp:126, hpr:5400, tq:133, tqr:4200, z:11.0, w:3100, dt:AWD, tx:"5MT/4AT", rl:6000, y1:2001),
-  (n:"2.4 (3rd gen)", code:"K24Z1", d:2.4, c:4, a:NA, hp:166, hpr:5800, tq:161, tqr:4200, z:9.0, w:3500, dt:AWD, tx:"5AT", rl:6500, y0:2007, y1:2011),
-  (n:"2.4 (4th gen)", code:"K24Z6", d:2.4, c:4, a:NA, hp:185, hpr:7000, tq:163, tqr:4400, z:8.7, w:3500, dt:AWD, tx:"5AT", rl:6800, y0:2012, y1:2016),
-  (n:"1.5T (5th gen)", code:"L15BE", d:1.5, c:4, a:Turbo, hp:190, hpr:5600, tq:179, tqr:2000, z:7.6, w:3500, dt:AWD, tx:"CVT", rl:6000, y0:2017, y1:2022),
-  (n:"Hybrid 2.0 (6th gen)", code:"LFB", d:2.0, c:4, a:Hybrid, hp:204, hpr:6200, tq:247, tqr:3000, z:7.4, w:3800, dt:AWD, tx:"1AT", f:Hybrid, y0:2023),
+  (n:"2.0 (1st gen)", code:"B20B", d:2.0, c:4, a:NA, hp:126, hpr:5400, tq:133, tqr:4200, z:11.0, w:3100, dt:AWD, tx:"5MT/4AT", rl:6000, y1:2001, alt:[(dt:FWD)]),
+  (n:"2.4 (3rd gen)", code:"K24Z1", d:2.4, c:4, a:NA, hp:166, hpr:5800, tq:161, tqr:4200, z:9.0, w:3500, dt:AWD, tx:"5AT", rl:6500, y0:2007, y1:2011, alt:[(dt:FWD)]),
+  (n:"2.4 (4th gen)", code:"K24Z6", d:2.4, c:4, a:NA, hp:185, hpr:7000, tq:163, tqr:4400, z:8.7, w:3500, dt:AWD, tx:"5AT", rl:6800, y0:2012, y1:2016, alt:[(dt:FWD)]),
+  (n:"1.5T (5th gen)", code:"L15BE", d:1.5, c:4, a:Turbo, hp:190, hpr:5600, tq:179, tqr:2000, z:7.6, w:3500, dt:AWD, tx:"CVT", rl:6000, y0:2017, y1:2022, alt:[(dt:FWD)]),
+  (n:"Hybrid 2.0 (6th gen)", code:"LFB", d:2.0, c:4, a:Hybrid, hp:204, hpr:6200, tq:247, tqr:3000, z:7.4, w:3800, dt:AWD, tx:"1AT", f:Hybrid, y0:2023, alt:[(dt:FWD)]),
  ]),
  (make:"Honda", model:"Odyssey", gen:"2nd-5th gen", y0:1999, y1:2026, trims:[
   (n:"3.5 V6 (2nd gen)", code:"J35A1", d:3.5, c:6, a:NA, hp:240, hpr:5800, tq:242, tqr:4500, z:8.0, w:4300, dt:FWD, tx:"5AT", rl:6000, y0:2002, y1:2004),
@@ -85,9 +85,9 @@
   (n:"3.5 V6 (5th gen)", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:7.0, zs:Mag, w:4500, dt:FWD, tx:"9AT/10AT", rl:6200, y0:2018),
  ]),
  (make:"Honda", model:"Pilot / Passport / Ridgeline", gen:"misc", y0:2003, y1:2026, trims:[
-  (n:"Pilot 3.5 V6 (2003-08)", code:"J35A", d:3.5, c:6, a:NA, hp:240, hpr:5750, tq:242, tqr:4500, z:8.2, w:4300, dt:AWD, tx:"5AT", rl:6000, y0:2003, y1:2008),
-  (n:"Pilot 3.5 V6 (2016+)", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:6.9, w:4300, dt:AWD, tx:"9AT", rl:6200, y0:2016),
-  (n:"Ridgeline 3.5 V6", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:6.9, zs:Mag, w:4400, dt:AWD, tx:"6AT/9AT", rl:6200, y0:2017),
+  (n:"Pilot 3.5 V6 (2003-08)", code:"J35A", d:3.5, c:6, a:NA, hp:240, hpr:5750, tq:242, tqr:4500, z:8.2, w:4300, dt:AWD, tx:"5AT", rl:6000, y0:2003, y1:2008, alt:[(dt:FWD, y0:2006)]),
+  (n:"Pilot 3.5 V6 (2016+)", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:6.9, w:4300, dt:AWD, tx:"9AT", rl:6200, y0:2016, alt:[(dt:FWD)]),
+  (n:"Ridgeline 3.5 V6", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:6.9, zs:Mag, w:4400, dt:AWD, tx:"6AT/9AT", rl:6200, y0:2017, alt:[(dt:FWD)]),
   (n:"Passport TrailSport 3.5 V6", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:7.1, w:4300, dt:AWD, tx:"9AT", rl:6200, y0:2019),
  ]),
  (make:"Honda", model:"Insight", gen:"1st gen", y0:2000, y1:2006, trims:[
@@ -120,7 +120,7 @@
  ]),
  (make:"Acura", model:"TLX", gen:"1st/2nd gen", y0:2015, y1:2026, trims:[
   (n:"2.4 (1st gen)", code:"K24Z7", d:2.4, c:4, a:NA, hp:206, hpr:6800, tq:182, tqr:4400, z:7.0, w:3500, dt:FWD, tx:"8DCT", rl:7000, y0:2015, y1:2020),
-  (n:"A-Spec 2.0T (2nd gen)", code:"K20C4", d:2.0, c:4, a:Turbo, hp:272, hpr:6500, tq:280, tqr:1600, z:5.9, zs:Mag, w:3800, dt:FWD, tx:"10AT", rl:6800, y0:2021),
+  (n:"A-Spec 2.0T (2nd gen)", code:"K20C4", d:2.0, c:4, a:Turbo, hp:272, hpr:6500, tq:280, tqr:1600, z:5.9, zs:Mag, w:3800, dt:FWD, tx:"10AT", rl:6800, y0:2021, alt:[(dt:AWD)]),
   (n:"Type S 3.0T", code:"J30AC", d:3.0, c:6, a:Turbo, hp:355, hpr:5500, tq:354, tqr:1400, z:4.5, zs:Mag, w:4300, dt:AWD, tx:"10AT", rl:6500, y0:2021, conf:Verified),
  ]),
  (make:"Acura", model:"Integra", gen:"5th gen (2023-)", y0:2023, y1:2026, trims:[
@@ -139,8 +139,8 @@
   (n:"MDX 3.5 (1st gen)", code:"J35A", d:3.5, c:6, a:NA, hp:240, hpr:5800, tq:245, tqr:3500, z:8.3, w:4300, dt:AWD, tx:"5AT", rl:6200, y0:2001, y1:2006),
   (n:"MDX 3.7 SH-AWD (2nd gen)", code:"J37A1", d:3.7, c:6, a:NA, hp:300, hpr:6300, tq:270, tqr:5000, z:6.8, zs:Mag, w:4500, dt:AWD, tx:"6AT", rl:6800, y0:2007, y1:2013),
   (n:"MDX Type S 3.0T", code:"J30AC", d:3.0, c:6, a:Turbo, hp:355, hpr:5500, tq:354, tqr:1400, z:5.4, zs:Mag, w:4700, dt:AWD, tx:"10AT", rl:6500, y0:2022),
-  (n:"RDX 2.3T (1st gen)", code:"K23A1", d:2.3, c:4, a:Turbo, hp:240, hpr:6000, tq:260, tqr:4500, z:6.6, zs:Mag, w:3900, dt:AWD, tx:"5AT", rl:6500, y0:2007, y1:2012),
-  (n:"RDX 2.0T (3rd gen)", code:"K20C4", d:2.0, c:4, a:Turbo, hp:272, hpr:6500, tq:280, tqr:1600, z:6.2, zs:Mag, w:3900, dt:AWD, tx:"10AT", rl:6800, y0:2019),
+  (n:"RDX 2.3T (1st gen)", code:"K23A1", d:2.3, c:4, a:Turbo, hp:240, hpr:6000, tq:260, tqr:4500, z:6.6, zs:Mag, w:3900, dt:AWD, tx:"5AT", rl:6500, y0:2007, y1:2012, alt:[(dt:FWD, y0:2010)]),
+  (n:"RDX 2.0T (3rd gen)", code:"K20C4", d:2.0, c:4, a:Turbo, hp:272, hpr:6500, tq:280, tqr:1600, z:6.2, zs:Mag, w:3900, dt:AWD, tx:"10AT", rl:6800, y0:2019, alt:[(dt:FWD)]),
  ]),
  (make:"Acura", model:"ILX", gen:"1st gen", y0:2013, y1:2022, trims:[
   (n:"2.4 6MT", code:"K24Z7", d:2.4, c:4, a:NA, hp:201, hpr:6800, tq:180, tqr:3600, z:6.8, zs:Mag, w:3000, dt:FWD, tx:"6MT/8DCT", rl:7000, y0:2013, y1:2022),

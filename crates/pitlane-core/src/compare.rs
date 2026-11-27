@@ -131,7 +131,7 @@ pub fn build_table(views: &[SlotView], s: Settings) -> Table {
     }
     let ms: Vec<Metrics> = views.iter().map(|v| metrics(v, s)).collect();
     for v in views {
-        t.headers.push(Header { title: car_title(v.year, v.car), subtitle: v.car.trim.to_string(), modded: v.eval.modded });
+        t.headers.push(Header { title: car_title(v.year, v.car), subtitle: format!("{} · {}", v.car.trim, v.car.drivetrain.label()), modded: v.eval.modded });
     }
 
     // numeric rows with deltas

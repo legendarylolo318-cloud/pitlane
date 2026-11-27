@@ -82,6 +82,20 @@ pub struct SearchKey {
     pub words: Box<str>,
     /// Make + model only ("fordranger"): a query that only names the car, not an engine.
     pub car: Box<str>,
+    /// Length of `hay` without the drivetrain words (used for the shorter-is-better ranking).
+    pub base_len: u16,
+    /// The same trim is also sold with another drivetrain (show it in result labels).
+    pub multi_drive: bool,
+}
+
+/// Searchable words for a drivetrain ("4wd 4x4", "awd", ...).
+fn drive_words(d: Drivetrain) -> &'static str {
+    match d {
+        Drivetrain::FWD => "fwd 2wd",
+        Drivetrain::RWD => "rwd 2wd",
+        Drivetrain::AWD => "awd",
+        Drivetrain::FourWD => "4wd 4x4",
+    }
 }
 
 struct Reader {
@@ -315,16 +329,22 @@ impl Db {
         self.search.get_or_init(|| {
             let mut out = Vec::new();
             for mi in 0..self.entries.len() {
-                for (ci, c) in self.load(mi).iter().enumerate() {
+                let cars = self.load(mi);
+                for (ci, c) in cars.iter().enumerate() {
                     let text = format!("{} {} {} {} {}", c.make, c.model, c.trim, c.generation, c.engine_code);
-                    let words: Vec<String> = text.split(|ch: char| !ch.is_alphanumeric()).map(crate::search::normalize).filter(|w| !w.is_empty()).collect();
+                    let mut words: Vec<String> = text.split(|ch: char| !ch.is_alphanumeric()).map(crate::search::normalize).filter(|w| !w.is_empty()).collect();
+                    let base_len = words.iter().map(|w| w.len()).sum::<usize>().min(u16::MAX as usize) as u16;
+                    words.extend(drive_words(c.drivetrain).split(' ').map(str::to_string));
                     let car = crate::search::normalize(&format!("{}{}", c.make, c.model));
+                    let multi_drive = cars.iter().any(|o| o.id != c.id && o.model == c.model && o.generation == c.generation && o.trim == c.trim);
                     out.push(SearchKey {
                         make: mi as u16,
                         index: ci as u16,
                         hay: words.concat().into_boxed_str(),
                         words: words.join(" ").into_boxed_str(),
                         car: car.into_boxed_str(),
+                        base_len,
+                        multi_drive,
                     });
                 }
             }

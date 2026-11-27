@@ -154,11 +154,11 @@ fn no_duplicate_or_shadowed_trims() {
                 let trims = db.trims_for(y, make, model);
                 for (i, a) in trims.iter().enumerate() {
                     for b in &trims[i + 1..] {
-                        if a.trim == b.trim {
-                            bad.push(format!("{y} {make} {model}: '{}' listed twice", a.trim));
+                        if a.trim == b.trim && a.generation == b.generation && a.drivetrain == b.drivetrain {
+                            bad.push(format!("{y} {make} {model}: '{}' {} listed twice", a.trim, a.drivetrain.label()));
                         }
                         let same = a.hp == b.hp && a.torque == b.torque && a.weight_lbs == b.weight_lbs && a.drivetrain == b.drivetrain && a.transmission == b.transmission && a.engine_code == b.engine_code;
-                        if same && a.zero_sixty == b.zero_sixty {
+                        if same && a.zero_sixty == b.zero_sixty && a.trim != b.trim {
                             bad.push(format!("{y} {make} {model}: '{}' and '{}' are identical", a.trim, b.trim));
                         }
                     }

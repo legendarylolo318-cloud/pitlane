@@ -64,6 +64,27 @@ fn app_flows() {
     let trims = strings(b.get_trims());
     assert_eq!(trims[b.get_trim_index() as usize], "4.0 SOHC V6");
     assert_eq!(b.get_slots().row_count(), 1, "search replaces the selected car");
+    // --- drivetrain: each engine is listed once; trims sold both ways get a 4WD / RWD choice
+    assert_eq!(trims.iter().filter(|t| t.as_str() == "4.0 SOHC V6").count(), 1);
+    assert_eq!(strings(b.get_drives()), vec!["4WD".to_string(), "RWD".to_string()]);
+    assert_eq!(b.get_drive_index(), 0);
+    let w4 = b.get_stats().row_data(3).unwrap().value;
+    b.invoke_drive_picked(1);
+    assert_eq!(b.get_drive_index(), 1);
+    assert!(b.get_detail_line().starts_with("RWD"), "{}", b.get_detail_line());
+    assert_ne!(b.get_stats().row_data(3).unwrap().value, w4, "2WD is lighter");
+    // switching to an engine that was 2WD-only shows no choice
+    b.invoke_trim_picked(trims.iter().position(|t| t == "2.3 Duratec I4").unwrap() as i32);
+    assert!(b.get_drives().row_count() <= 1);
+    // and back to the V6: the chosen RWD is kept
+    b.invoke_trim_picked(trims.iter().position(|t| t == "3.0 V6").unwrap() as i32);
+    assert!(b.get_detail_line().starts_with("RWD"), "{}", b.get_detail_line());
+    b.invoke_drive_picked(1);
+    assert!(b.get_detail_line().starts_with("4WD"), "{}", b.get_detail_line());
+    // the year picker keeps the drivetrain too
+    let years = strings(b.get_years());
+    b.invoke_year_picked(years.iter().position(|y| y == "2008").unwrap() as i32);
+    assert!(b.get_detail_line().starts_with("4WD"), "{}", b.get_detail_line());
 
     b.invoke_search_edited("2018 mustang gt".into());
     pump(200);

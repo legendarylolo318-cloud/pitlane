@@ -231,6 +231,50 @@ pub struct TrimSrc {
     pub y0: Option<u16>,
     #[serde(default)]
     pub y1: Option<u16>,
+    /// Other drivetrains this trim was sold with (e.g. a 2WD truck also offered as 4WD).
+    /// Each becomes its own car with id `<base id>-<awd|4wd|fwd|rwd>`.
+    #[serde(default)]
+    pub alt: Vec<AltSrc>,
+}
+
+/// An alternative drivetrain for a trim. Weight and 0-60 default to an estimate derived from the
+/// base trim (about +150 lb for AWD on a car, +250 lb for 4WD on trucks/SUVs over 4000 lb).
+#[derive(Clone, Debug, Deserialize)]
+pub struct AltSrc {
+    pub dt: Drivetrain,
+    #[serde(default)]
+    pub w: Option<u16>,
+    #[serde(default)]
+    pub z: Option<f32>,
+    /// Narrows the years this drivetrain was offered.
+    #[serde(default)]
+    pub y0: Option<u16>,
+    #[serde(default)]
+    pub y1: Option<u16>,
+}
+
+fn driven_wheels(d: Drivetrain) -> u8 {
+    match d {
+        Drivetrain::FWD | Drivetrain::RWD => 2,
+        Drivetrain::AWD | Drivetrain::FourWD => 4,
+    }
+}
+
+/// Estimated curb weight of the same trim with another drivetrain.
+pub fn alt_weight(base_w: u16, from: Drivetrain, to: Drivetrain) -> u16 {
+    let delta: i32 = if base_w >= 4000 { 250 } else { 150 };
+    let w = base_w as i32
+        + match (driven_wheels(from), driven_wheels(to)) {
+            (2, 4) => delta,
+            (4, 2) => -delta,
+            _ => 0,
+        };
+    w.clamp(1500, 10_000) as u16
+}
+
+/// Estimated 0-60 for a different weight (same power), rounded to 0.1 s.
+pub fn alt_zero_sixty(base_z: f32, base_w: u16, new_w: u16) -> f32 {
+    ((base_z * (new_w as f32 / base_w as f32).powf(0.58)) * 10.0).round() / 10.0
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -269,6 +313,47 @@ pub fn slug(s: &str) -> String {
 }
 
 pub fn expand(file: &FileSrc) -> Vec<Car> {
+    let mut out = expand_base(file);
+    let mut i = 0;
+    // insert each trim's drivetrain variants right after it (trim pickers keep data order)
+    while i < out.len() {
+        let base = out[i].clone();
+        let alts = file
+            .gens
+            .iter()
+            .filter(|g| g.make == *base.make && g.model == *base.model && g.generation == *base.generation)
+            .flat_map(|g| g.trims.iter())
+            .find(|t| t.n == *base.trim)
+            .map(|t| t.alt.clone())
+            .unwrap_or_default();
+        let mut at = i + 1;
+        for a in alts {
+            let w = a.w.unwrap_or_else(|| alt_weight(base.weight_lbs, base.drivetrain, a.dt));
+            let mut c = base.clone();
+            c.id = format!("{}-{}", base.id, slug(a.dt.label())).into();
+            c.drivetrain = a.dt;
+            c.weight_lbs = w;
+            c.year_start = a.y0.unwrap_or(base.year_start).max(base.year_start);
+            c.year_end = a.y1.unwrap_or(base.year_end).min(base.year_end);
+            match a.z {
+                Some(z) => c.zero_sixty = z,
+                None => {
+                    c.zero_sixty = alt_zero_sixty(base.zero_sixty, base.weight_lbs, w);
+                    c.zero_sixty_source = SourceKind::Est;
+                }
+            }
+            if a.w.is_none() {
+                c.confidence = Confidence::Estimated;
+            }
+            out.insert(at, c);
+            at += 1;
+        }
+        i = at;
+    }
+    out
+}
+
+fn expand_base(file: &FileSrc) -> Vec<Car> {
     let mut out = Vec::new();
     for g in &file.gens {
         for t in &g.trims {
