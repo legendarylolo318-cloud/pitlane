@@ -6,6 +6,8 @@
   (n:"GT / LX 5.0 V8", code:"5.0 HO", d:5.0, c:8, a:NA, hp:225, hpr:4200, tq:300, tqr:3200, z:6.2, zs:Mag, w:3100, dt:RWD, tx:"5MT/4AT", rl:5800, conf:Verified),
  ]),
  (make:"Ford", model:"Mustang", gen:"SN95 (1994-2004)", y0:1994, y1:2004, trims:[
+  (n:"GT 5.0 V8 (1994-95)", code:"5.0 HO", d:5.0, c:8, a:NA, hp:215, hpr:4200, tq:285, tqr:3400, z:6.7, zs:Mag, w:3250, dt:RWD, tx:"5MT/4AT", rl:5800, y0:1994, y1:1995),
+  (n:"SVT Cobra 5.0 (1994-95)", code:"5.0 HO GT40", d:5.0, c:8, a:NA, hp:240, hpr:4800, tq:285, tqr:4000, z:5.9, zs:Mag, w:3350, dt:RWD, tx:"5MT", rl:6000, y0:1994, y1:1995),
   (n:"V6 3.8", code:"3.8 Essex", d:3.8, c:6, a:NA, hp:145, hpr:4000, tq:215, tqr:2500, z:8.8, w:3050, dt:RWD, tx:"5MT/4AT", rl:5500, y1:1998),
   (n:"V6 3.8 (1999+)", code:"3.8 Essex", d:3.8, c:6, a:NA, hp:190, hpr:5250, tq:220, tqr:2750, z:7.7, w:3200, dt:RWD, tx:"5MT/4AT", rl:5800, y0:1999),
   (n:"GT 4.6 V8", code:"4.6 2V", d:4.6, c:8, a:NA, hp:215, hpr:4400, tq:285, tqr:3500, z:6.4, zs:Mag, w:3250, dt:RWD, tx:"5MT/4AT", rl:5800, y1:1998, y0:1996),
@@ -17,12 +19,14 @@
  (make:"Ford", model:"Mustang", gen:"S197 (2005-2014)", y0:2005, y1:2014, trims:[
   (n:"V6 4.0", code:"4.0 SOHC", d:4.0, c:6, a:NA, hp:210, hpr:5300, tq:240, tqr:3500, z:6.9, w:3300, dt:RWD, tx:"5MT/5AT", rl:6000, y1:2010),
   (n:"V6 3.7", code:"3.7 Cyclone", d:3.7, c:6, a:NA, hp:305, hpr:6500, tq:280, tqr:4250, z:5.2, zs:Mag, w:3470, dt:RWD, tx:"6MT/6AT", rl:7000, y0:2011, conf:Verified),
-  (n:"GT 4.6 3V", code:"4.6 3V", d:4.6, c:8, a:NA, hp:300, hpr:5750, tq:320, tqr:4500, z:5.0, zs:Mag, w:3500, dt:RWD, tx:"5MT/5AT", rl:6500, y1:2010, conf:Verified),
+  (n:"GT 4.6 3V", code:"4.6 3V", d:4.6, c:8, a:NA, hp:300, hpr:5750, tq:320, tqr:4500, z:5.0, zs:Mag, w:3500, dt:RWD, tx:"5MT/5AT", rl:6500, y1:2009, conf:Verified),
+  (n:"GT 4.6 3V (2010)", code:"4.6 3V", d:4.6, c:8, a:NA, hp:315, hpr:6000, tq:325, tqr:4250, z:4.9, zs:Mag, w:3530, dt:RWD, tx:"5MT/5AT", rl:6500, y0:2010, y1:2010, conf:Verified),
   (n:"GT 5.0 Coyote", code:"5.0 Coyote", d:5.0, c:8, a:NA, hp:412, hpr:6500, tq:390, tqr:4250, z:4.5, zs:Mag, w:3600, dt:RWD, tx:"6MT/6AT", rl:7000, y0:2011, y1:2012, conf:Verified),
   (n:"GT 5.0 Coyote (2013+)", code:"5.0 Coyote", d:5.0, c:8, a:NA, hp:420, hpr:6500, tq:390, tqr:4250, z:4.4, zs:Mag, w:3620, dt:RWD, tx:"6MT/6AT", rl:7000, y0:2013, conf:Verified),
   (n:"Boss 302", code:"5.0 Boss", d:5.0, c:8, a:NA, hp:444, hpr:7400, tq:380, tqr:4500, z:4.3, zs:Mag, w:3630, dt:RWD, tx:"6MT", rl:7500, y0:2012, y1:2013, conf:Verified),
   (n:"Shelby GT500 5.4 SC", code:"5.4 SC", d:5.4, c:8, a:Supercharged, hp:500, hpr:6000, tq:480, tqr:4500, z:4.5, zs:Mag, w:3920, dt:RWD, tx:"6MT", rl:6500, y0:2007, y1:2009, conf:Verified),
   (n:"Shelby GT500 5.4 SC (2010)", code:"5.4 SC", d:5.4, c:8, a:Supercharged, hp:540, hpr:6200, tq:510, tqr:4250, z:4.3, zs:Mag, w:3920, dt:RWD, tx:"6MT", rl:6500, y0:2010, y1:2010, conf:Verified),
+  (n:"Shelby GT500 5.4 SC (2011-12)", code:"5.4 SC alloy", d:5.4, c:8, a:Supercharged, hp:550, hpr:6200, tq:510, tqr:4250, z:4.2, zs:Mag, w:3820, dt:RWD, tx:"6MT", rl:6500, y0:2011, y1:2012, conf:Verified),
   (n:"Shelby GT500 5.8 SC", code:"5.8 SC", d:5.8, c:8, a:Supercharged, hp:662, hpr:6500, tq:631, tqr:4000, z:3.5, zs:Mag, w:3850, dt:RWD, tx:"6MT", rl:6500, y0:2013, y1:2014, conf:Verified),
  ]),
  (make:"Ford", model:"Mustang", gen:"S550 (2015-2023)", y0:2015, y1:2023, trims:[
@@ -36,7 +40,10 @@
   (n:"Mach 1", code:"5.0 Coyote Gen3", d:5.0, c:8, a:NA, hp:480, hpr:7000, tq:420, tqr:4600, z:4.2, zs:Mag, w:3830, dt:RWD, tx:"6MT/10AT", rl:7500, y0:2021, conf:Verified),
   (n:"Shelby GT350", code:"5.2 Voodoo", d:5.2, c:8, a:NA, hp:526, hpr:7500, tq:429, tqr:4750, z:4.1, zs:Mag, w:3760, dt:RWD, tx:"6MT", rl:8250, y0:2016, y1:2020, conf:Verified),
   (n:"Shelby GT500", code:"5.2 Predator SC", d:5.2, c:8, a:Supercharged, hp:760, hpr:7300, tq:625, tqr:5000, z:3.3, zs:Mfr, w:4180, dt:RWD, tx:"7DCT", rl:7500, y0:2020, y1:2022, conf:Verified),
-  (n:"Mustang Mach-E GT", code:"EV dual-motor", d:0.0, c:0, a:EV, hp:480, tq:634, z:3.8, zs:Mag, w:4950, dt:AWD, tx:"1AT", f:Electric, y0:2021, y1:2023),
+ ]),
+ (make:"Ford", model:"Mustang Mach-E", gen:"1st gen (2021-)", y0:2021, y1:2026, trims:[
+  (n:"GT AWD", code:"EV dual-motor", d:0.0, c:0, a:EV, hp:480, tq:600, z:3.8, zs:Mfr, w:4990, dt:AWD, tx:"1AT", f:Electric),
+  (n:"GT Performance Edition", code:"EV dual-motor", d:0.0, c:0, a:EV, hp:480, tq:634, z:3.5, zs:Mfr, w:4990, dt:AWD, tx:"1AT", f:Electric, y0:2021, y1:2023),
  ]),
  (make:"Ford", model:"Mustang", gen:"S650 (2024-)", y0:2024, y1:2026, trims:[
   (n:"EcoBoost 2.3", code:"2.3 EcoBoost", d:2.3, c:4, a:Turbo, hp:315, hpr:5500, tq:350, tqr:3000, z:5.0, w:3580, dt:RWD, tx:"10AT", rl:6500),
@@ -68,7 +75,10 @@
  ]),
  (make:"Ford", model:"F-150", gen:"13th gen (2015-20)", y0:2015, y1:2020, trims:[
   (n:"3.5 V6", code:"3.5 Ti-VCT", d:3.5, c:6, a:NA, hp:282, hpr:6300, tq:253, tqr:4000, z:7.9, w:4700, dt:RWD, tx:"6AT", rl:6200),
-  (n:"2.7 EcoBoost", code:"2.7 EcoBoost", d:2.7, c:6, a:Turbo, hp:325, hpr:5000, tq:400, tqr:2750, z:6.4, zs:Mag, w:4700, dt:RWD, tx:"6AT/10AT", rl:5800, conf:Verified),
+  (n:"2.7 EcoBoost", code:"2.7 EcoBoost", d:2.7, c:6, a:Turbo, hp:325, hpr:5750, tq:375, tqr:3000, z:6.4, zs:Mag, w:4700, dt:RWD, tx:"6AT", rl:5800, y1:2017, conf:Verified),
+  (n:"2.7 EcoBoost (2018+)", code:"2.7 EcoBoost Gen2", d:2.7, c:6, a:Turbo, hp:325, hpr:5000, tq:400, tqr:2750, z:6.1, zs:Mag, w:4700, dt:RWD, tx:"10AT", rl:5800, y0:2018, conf:Verified),
+  (n:"3.5 EcoBoost (2015-16)", code:"3.5 EcoBoost", d:3.5, c:6, a:Turbo, hp:365, hpr:5000, tq:420, tqr:2500, z:6.0, zs:Mag, w:4900, dt:RWD, tx:"6AT", rl:5600, y1:2016),
+  (n:"5.0 V8 (2015-17)", code:"5.0 Coyote", d:5.0, c:8, a:NA, hp:385, hpr:5750, tq:387, tqr:3850, z:6.2, w:5000, dt:RWD, tx:"6AT", rl:6000, y1:2017),
   (n:"3.5 EcoBoost", code:"3.5 EcoBoost", d:3.5, c:6, a:Turbo, hp:375, hpr:5000, tq:470, tqr:3500, z:5.8, zs:Mag, w:5000, dt:RWD, tx:"6AT/10AT", rl:5600, y0:2017, conf:Verified),
   (n:"5.0 V8", code:"5.0 Coyote", d:5.0, c:8, a:NA, hp:395, hpr:5750, tq:400, tqr:3850, z:6.0, zs:Mag, w:5100, dt:RWD, tx:"6AT/10AT", rl:6000, y0:2018, conf:Verified),
   (n:"Raptor 3.5 EcoBoost HO", code:"3.5 EB HO", d:3.5, c:6, a:Turbo, hp:450, hpr:5000, tq:510, tqr:3500, z:5.1, zs:Mag, w:5700, dt:FourWD, tx:"10AT", rl:6000, y0:2017, conf:Verified),
@@ -85,7 +95,7 @@
  ]),
  (make:"Ford", model:"Focus", gen:"SVT / ST / RS", y0:2002, y1:2018, trims:[
   (n:"SVT Focus 2.0", code:"2.0 Zetec", d:2.0, c:4, a:NA, hp:170, hpr:6800, tq:145, tqr:4800, z:7.0, w:2750, dt:FWD, tx:"6MT", rl:7200, y0:2002, y1:2004),
-  (n:"ST 2.5", code:"2.5 Duratec", d:2.5, c:5, a:NA, hp:151, hpr:6000, tq:154, tqr:4500, z:8.4, w:2900, dt:FWD, tx:"5MT", rl:6500, y0:2005, y1:2007),
+  (n:"ST 2.3 (US)", code:"2.3 Duratec", d:2.3, c:4, a:NA, hp:151, hpr:5750, tq:154, tqr:4250, z:8.4, w:2900, dt:FWD, tx:"5MT", rl:6500, y0:2005, y1:2007),
   (n:"ST 2.0 EcoBoost", code:"2.0 EcoBoost", d:2.0, c:4, a:Turbo, hp:252, hpr:5500, tq:270, tqr:2500, z:6.0, zs:Mag, w:3200, dt:FWD, tx:"6MT", rl:6500, y0:2013, y1:2018, conf:Verified),
   (n:"RS 2.3 EcoBoost", code:"2.3 EcoBoost", d:2.3, c:4, a:Turbo, hp:350, hpr:6000, tq:350, tqr:3200, z:4.7, zs:Mag, w:3440, dt:AWD, tx:"6MT", rl:6800, y0:2016, y1:2018, conf:Verified),
  ]),
@@ -94,6 +104,7 @@
  ]),
  (make:"Ford", model:"Taurus", gen:"SHO", y0:1990, y1:2019, trims:[
   (n:"SHO 3.0 V6 (1st gen)", code:"3.0 Yamaha", d:3.0, c:6, a:NA, hp:220, hpr:6200, tq:200, tqr:4800, z:6.6, zs:Mag, w:3350, dt:FWD, tx:"5MT", rl:7000, y0:1990, y1:1995),
+  (n:"SHO 3.4 V8 (3rd gen)", code:"3.4 Yamaha V8", d:3.4, c:8, a:NA, hp:235, hpr:6100, tq:230, tqr:4800, z:7.4, zs:Mag, w:3450, dt:FWD, tx:"4AT", rl:6500, y0:1996, y1:1999),
   (n:"SHO 3.5 EcoBoost", code:"3.5 EcoBoost", d:3.5, c:6, a:Turbo, hp:365, hpr:5500, tq:350, tqr:3500, z:5.2, zs:Mag, w:4400, dt:AWD, tx:"6AT", rl:6000, y0:2010, y1:2019, conf:Verified),
  ]),
  (make:"Ford", model:"Explorer", gen:"ST / modern", y0:2011, y1:2026, trims:[
@@ -133,14 +144,25 @@
  (make:"Lincoln", model:"Navigator", gen:"Gen 1-2 (1998-2006)", y0:1998, y1:2006, trims:[
   (n:"5.4 V8", code:"5.4 Triton", d:5.4, c:8, a:NA, hp:300, hpr:5000, tq:355, tqr:2750, z:8.5, w:5500, dt:FourWD, tx:"4AT/6AT", rl:5500),
  ]),
+ (make:"Lincoln", model:"Navigator", gen:"Gen 3 (2007-17)", y0:2007, y1:2017, trims:[
+  (n:"5.4 V8", code:"5.4 3V", d:5.4, c:8, a:NA, hp:300, hpr:5000, tq:365, tqr:3750, z:8.4, w:5800, dt:FourWD, tx:"6AT", rl:5800, y1:2014),
+  (n:"3.5 EcoBoost (2015-17)", code:"3.5 EcoBoost", d:3.5, c:6, a:Turbo, hp:380, hpr:5250, tq:460, tqr:2750, z:6.5, zs:Mag, w:5800, dt:FourWD, tx:"6AT", rl:6000, y0:2015),
+ ]),
+ (make:"Lincoln", model:"MKS", gen:"1st gen", y0:2009, y1:2016, trims:[
+  (n:"3.7 V6", code:"3.7 Cyclone", d:3.7, c:6, a:NA, hp:304, hpr:6500, tq:279, tqr:4000, z:7.0, w:4200, dt:FWD, tx:"6AT", rl:6700, y0:2013),
+  (n:"3.5 EcoBoost AWD", code:"3.5 EcoBoost", d:3.5, c:6, a:Turbo, hp:365, hpr:5500, tq:350, tqr:3500, z:5.4, zs:Mag, w:4400, dt:AWD, tx:"6AT", rl:6000, y0:2013),
+  (n:"3.7 V6 (2009-12)", code:"3.7 Cyclone", d:3.7, c:6, a:NA, hp:273, hpr:6250, tq:270, tqr:4250, z:7.3, w:4200, dt:FWD, tx:"6AT", rl:6700, y1:2012),
+  (n:"3.5 EcoBoost AWD (2010-12)", code:"3.5 EcoBoost", d:3.5, c:6, a:Turbo, hp:355, hpr:5700, tq:350, tqr:3500, z:5.6, zs:Mag, w:4400, dt:AWD, tx:"6AT", rl:6000, y0:2010, y1:2012),
+ ]),
  (make:"Lincoln", model:"Navigator", gen:"Gen 4 (2018-)", y0:2018, y1:2026, trims:[
-  (n:"3.5 EcoBoost", code:"3.5 EB HO", d:3.5, c:6, a:Turbo, hp:450, hpr:5500, tq:510, tqr:3500, z:5.4, zs:Mag, w:5900, dt:FourWD, tx:"10AT", rl:6000),
-  (n:"Black Label 3.5 EcoBoost HO", code:"3.5 EB HO", d:3.5, c:6, a:Turbo, hp:480, hpr:5500, tq:600, tqr:3500, z:5.1, w:6000, dt:FourWD, tx:"10AT", rl:6000, y0:2022),
+  (n:"3.5 EcoBoost (2018-21)", code:"3.5 EB HO", d:3.5, c:6, a:Turbo, hp:450, hpr:5500, tq:510, tqr:3500, z:5.4, zs:Mag, w:5900, dt:FourWD, tx:"10AT", rl:6000, y1:2021),
+  (n:"3.5 EcoBoost (2022+)", code:"3.5 EB HO", d:3.5, c:6, a:Turbo, hp:440, hpr:5850, tq:510, tqr:3000, z:5.6, w:5950, dt:FourWD, tx:"10AT", rl:6000, y0:2022),
  ]),
  (make:"Lincoln", model:"LS", gen:"1st gen", y0:2000, y1:2006, trims:[
-  (n:"3.9 V8", code:"3.9 AJ-V8", d:3.9, c:8, a:NA, hp:252, hpr:6100, tq:267, tqr:4300, z:7.0, w:3800, dt:RWD, tx:"5AT/5MT", rl:6500),
+  (n:"3.9 V8", code:"3.9 AJ-V8", d:3.9, c:8, a:NA, hp:252, hpr:6100, tq:267, tqr:4300, z:7.0, w:3800, dt:RWD, tx:"5AT", rl:6500, y1:2002),
+  (n:"3.9 V8 (2003-06)", code:"3.9 AJ-V8", d:3.9, c:8, a:NA, hp:280, hpr:6000, tq:286, tqr:4000, z:6.6, w:3800, dt:RWD, tx:"5AT", rl:6500, y0:2003),
  ]),
- (make:"Lincoln", model:"Continental", gen:"Mk? / 10th gen", y0:1990, y1:2002, trims:[
+ (make:"Lincoln", model:"Continental", gen:"9th gen (1995-2002)", y0:1995, y1:2002, trims:[
   (n:"4.6 V8 DOHC", code:"4.6 4V", d:4.6, c:8, a:NA, hp:275, hpr:5750, tq:275, tqr:4750, z:7.4, w:3900, dt:FWD, tx:"4AT", rl:6000, y0:1995, y1:2002),
  ]),
  (make:"Lincoln", model:"Mark LT", gen:"1st gen", y0:2006, y1:2008, trims:[
@@ -151,11 +173,14 @@
   (n:"3.0 EcoBoost", code:"3.0 EcoBoost", d:3.0, c:6, a:Turbo, hp:400, hpr:5500, tq:415, tqr:3500, z:5.5, w:4900, dt:AWD, tx:"10AT", rl:6000),
  ]),
  // ---------------- MERCURY ----------------
+ (make:"Mercury", model:"Capri", gen:"2nd gen (1991-94)", y0:1991, y1:1994, trims:[
+  (n:"XR2 1.6 Turbo", code:"B6T", d:1.6, c:4, a:Turbo, hp:132, hpr:6000, tq:136, tqr:3000, z:8.4, zs:Mag, w:2500, dt:FWD, tx:"5MT", rl:7000),
+ ]),
  (make:"Mercury", model:"Grand Marquis", gen:"Panther", y0:1992, y1:2011, trims:[
   (n:"4.6 V8", code:"4.6 2V", d:4.6, c:8, a:NA, hp:224, hpr:4800, tq:272, tqr:3500, z:8.5, w:3900, dt:RWD, tx:"4AT", rl:5500),
  ]),
  (make:"Mercury", model:"Cougar", gen:"8th/9th gen", y0:1990, y1:2002, trims:[
-  (n:"XR7 3.8 SC", code:"3.8 SC", d:3.8, c:6, a:Supercharged, hp:210, hpr:4000, tq:315, tqr:2600, z:7.2, w:3700, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1990, y1:1995),
+  (n:"XR7 3.8 SC", code:"3.8 SC", d:3.8, c:6, a:Supercharged, hp:210, hpr:4000, tq:315, tqr:2600, z:7.2, w:3700, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1990, y1:1990),
   (n:"V6 2.5", code:"2.5 Duratec", d:2.5, c:6, a:NA, hp:170, hpr:6250, tq:165, tqr:4250, z:7.8, w:3000, dt:FWD, tx:"5MT/4AT", rl:6500, y0:1999, y1:2002),
  ]),
  (make:"Mercury", model:"Marauder", gen:"1st gen", y0:2003, y1:2004, trims:[

@@ -479,6 +479,7 @@ fn load_slot_from(c: &mut Ctx, year: u16, car: &Car, keep_mods: bool) {
 }
 
 pub fn run_with_dir(dir: PathBuf) {
+    let t0 = std::time::Instant::now();
     let store = Store::new(dir);
     let (state, state_err) = store.load_state();
     let (overrides, ov_err) = store.load_overrides();
@@ -847,6 +848,23 @@ pub fn run_with_dir(dir: PathBuf) {
             }
             slint::CloseRequestResponse::HideWindow
         });
+    }
+
+    // PITLANE_TRACE=1 prints the time to the first rendered frame (used for the perf report).
+    if std::env::var_os("PITLANE_TRACE").is_some() {
+        let mut done = false;
+        let hooked = ui.window().set_rendering_notifier(move |st, _| {
+            if !done && matches!(st, slint::RenderingState::AfterRendering) {
+                done = true;
+                eprintln!("pitlane: first frame after {:.1} ms", t0.elapsed().as_secs_f64() * 1000.0);
+            }
+        });
+        if hooked.is_err() {
+            // The software renderer has no rendering notifier: report when the event loop first idles.
+            slint::Timer::single_shot(std::time::Duration::ZERO, move || {
+                eprintln!("pitlane: first frame after {:.1} ms (event loop idle)", t0.elapsed().as_secs_f64() * 1000.0);
+            });
+        }
     }
 
     if let Err(e) = ui.run() {

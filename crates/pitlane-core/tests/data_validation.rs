@@ -108,3 +108,76 @@ fn mod_definitions_are_sane() {
         }
     }
 }
+
+fn car<'a>(db: &'a Db, make: &str, model: &str, year: u16, trim: &str) -> &'a Car {
+    db.trims_for(year, make, model)
+        .into_iter()
+        .find(|c| c.trim == trim)
+        .unwrap_or_else(|| panic!("missing {year} {make} {model} {trim}: have {:?}", db.trims_for(year, make, model).iter().map(|c| &c.trim).collect::<Vec<_>>()))
+}
+
+/// Spot checks against widely published factory figures (hp, lb-ft, curb weight +/- 3 %).
+#[test]
+fn reference_cars_match_published_figures() {
+    let db = Db::bundled();
+    let check = |make: &str, model: &str, year: u16, trim: &str, hp: u16, tq: u16, weight: u16| {
+        let c = car(&db, make, model, year, trim);
+        assert_eq!((c.hp, c.torque), (hp, tq), "{year} {make} {model} {trim}");
+        let dw = (c.weight_lbs as f32 - weight as f32).abs() / weight as f32;
+        assert!(dw < 0.03, "{year} {make} {model} {trim}: weight {} vs {weight}", c.weight_lbs);
+    };
+    check("Ford", "Mustang", 2015, "GT 5.0", 435, 400, 3705);
+    check("Honda", "Civic", 2017, "Type R 2.0T (FK8)", 306, 295, 3117);
+    check("Toyota", "Supra", 2020, "3.0 B58 (2020)", 335, 365, 3397);
+    check("Toyota", "Supra", 2021, "3.0 B58 (2021+)", 382, 368, 3397);
+    check("Chevrolet", "Corvette", 2020, "Stingray LT2", 495, 470, 3535);
+    check("Dodge", "Challenger", 2015, "SRT Hellcat 6.2 SC", 707, 650, 4448);
+    check("Subaru", "WRX STI", 2015, "STI 2.5T (2015-21)", 305, 290, 3391);
+    check("Jeep", "Grand Cherokee", 2018, "Trackhawk 6.2 SC", 707, 645, 5363);
+    check("Lexus", "LS", 1990, "LS400 4.0 V8 (XF10)", 250, 260, 3759);
+    check("Acura", "NSX", 1991, "3.0 V6 VTEC", 270, 210, 3010);
+    check("Acura", "NSX", 2017, "3.5 TT Hybrid", 573, 476, 3878);
+}
+
+/// The same make/model/year must not offer two trims with the same name, or two identical cars.
+#[test]
+fn no_duplicate_or_shadowed_trims() {
+    let db = Db::bundled();
+    let mut bad = Vec::new();
+    for (make, _) in db.makes() {
+        for y in YEAR_MIN..=YEAR_MAX {
+            for model in db.models_for(y, make) {
+                let trims = db.trims_for(y, make, model);
+                for (i, a) in trims.iter().enumerate() {
+                    for b in &trims[i + 1..] {
+                        if a.trim == b.trim {
+                            bad.push(format!("{y} {make} {model}: '{}' listed twice", a.trim));
+                        }
+                        let same = a.hp == b.hp && a.torque == b.torque && a.weight_lbs == b.weight_lbs && a.drivetrain == b.drivetrain && a.transmission == b.transmission && a.engine_code == b.engine_code;
+                        if same && a.zero_sixty == b.zero_sixty {
+                            bad.push(format!("{y} {make} {model}: '{}' and '{}' are identical", a.trim, b.trim));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    bad.dedup();
+    assert!(bad.is_empty(), "{}", bad.join("\n"));
+}
+
+/// Prints per-make coverage (`cargo test -- --nocapture coverage`) so gaps are easy to see.
+#[test]
+fn coverage_report() {
+    let db = Db::bundled();
+    let mut total = 0;
+    for (make, group) in db.makes() {
+        let cars = db.cars_of_make(make);
+        total += cars.len();
+        let years: Vec<u16> = (YEAR_MIN..=YEAR_MAX).filter(|y| cars.iter().any(|c| c.covers_year(*y))).collect();
+        let missing: Vec<u16> = (YEAR_MIN..=YEAR_MAX).filter(|y| !years.contains(y)).collect();
+        let verified = cars.iter().filter(|c| c.confidence == Confidence::Verified).count();
+        println!("{make:<11} {group:<26} {:>3} trims, {verified:>3} verified, years {}-{}, gaps {:?}", cars.len(), years.first().unwrap_or(&0), years.last().unwrap_or(&0), missing);
+    }
+    println!("total {total}");
+}

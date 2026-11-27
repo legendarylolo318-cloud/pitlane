@@ -3,7 +3,6 @@
 
 use crate::model::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ModSel {
@@ -75,48 +74,100 @@ fn find_def<'a>(defs: &'a [ModDef], id: &str) -> Option<&'a ModDef> {
     defs.iter().find(|d| d.id == id)
 }
 
+/// Why a selected mod is not counted (None = it applies).
+fn skip_reason<'a>(def: &'a ModDef, car: &Car, asp: Aspiration, defs: &'a [ModDef], active: &[&str]) -> Option<Skip<'a>> {
+    if !def.fuels.is_empty() && !def.fuels.contains(&car.fuel) {
+        return Some(Skip::Fuel);
+    }
+    // Of two conflicting mods the one defined first wins (both are only ever "active" if selected).
+    if let Some(c) = def.conflicts.iter().find(|c| active.contains(&c.as_str())) {
+        return Some(Skip::Conflict(find_def(defs, c).map(|d| d.name.as_str()).unwrap_or(c)));
+    }
+    if !def.effects.iter().any(|e| e.applies_to.is_empty() || e.applies_to.contains(&asp)) {
+        return Some(Skip::Aspiration);
+    }
+    None
+}
+
+enum Skip<'a> {
+    Fuel,
+    Conflict(&'a str),
+    Aspiration,
+}
+
+/// Applies the selected mods to `car`.
+///
+/// Rules:
+/// * mods are applied in `defs` order; percentage effects compound on the running *engine* power,
+///   so stacking has diminishing returns;
+/// * flat effects (nitrous shot, custom +/- hp) are added on top at the end and are never scaled by
+///   other mods' percentages (altitude does not shrink a nitrous shot, a tune does not grow it);
+/// * a mod that is ignored (wrong fuel, wrong aspiration, losing a conflict) cannot satisfy another
+///   mod's `requires`;
+/// * aspiration changes (`makes_aspiration`, e.g. a turbo kit) affect every later mod.
 pub fn evaluate(car: &Car, sels: &[ModSel], defs: &[ModDef]) -> Eval {
-    let selected: HashSet<&str> = sels.iter().map(|s| s.id.as_str()).collect();
+    let picked = |id: &str| sels.iter().find(|s| s.id == id);
+
+    // Pass 1: which selected mods actually take part (independent of `requires`).
+    let mut active: Vec<&str> = Vec::new();
+    let mut asp = car.aspiration;
+    for def in defs.iter().filter(|d| picked(&d.id).is_some()) {
+        if skip_reason(def, car, asp, defs, &active).is_none() {
+            active.push(&def.id);
+            let first = def.effects.iter().find(|e| e.applies_to.is_empty() || e.applies_to.contains(&asp));
+            if let Some(a) = first.and_then(|e| e.makes_aspiration) {
+                asp = a;
+            }
+        }
+    }
+
+    // Pass 2: apply effects.
     let mut asp = car.aspiration;
     let mut hp = [car.hp as f32; 3];
     let mut tq = [car.torque as f32; 3];
+    let mut flat_hp = [0.0f32; 3];
+    let mut flat_tq = [0.0f32; 3];
     let mut weight = car.weight_lbs as f32;
     let mut zs_mult = [1.0f32; 2];
     let mut traction = 1.0f32;
     let mut warnings: Vec<Warning> = Vec::new();
     let mut warn = |id: &str, text: String| warnings.push(Warning { mod_id: id.to_string(), text });
     let mut modded = false;
+    let mut seen: Vec<&str> = Vec::new();
 
     for def in defs {
-        let Some(sel) = sels.iter().find(|s| s.id == def.id) else { continue };
-
-        if !def.fuels.is_empty() && !def.fuels.contains(&car.fuel) {
-            warn(&def.id, format!("{}: not applicable to {} engines (ignored).", def.name, car.fuel.label()));
-            continue;
-        }
-        if let Some(c) = def.conflicts.iter().find(|c| selected.contains(c.as_str()) && defs.iter().position(|d| &d.id == *c) < defs.iter().position(|d| d.id == def.id)) {
-            let other = find_def(defs, c).map(|d| d.name.as_str()).unwrap_or(c);
-            warn(&def.id, format!("{} conflicts with {other}; only {other} is counted.", def.name));
-            continue;
+        let Some(sel) = picked(&def.id) else { continue };
+        match skip_reason(def, car, asp, defs, &seen) {
+            Some(Skip::Fuel) => {
+                warn(&def.id, format!("{}: not applicable to {} engines (ignored).", def.name, car.fuel.label()));
+                continue;
+            }
+            Some(Skip::Conflict(other)) => {
+                warn(&def.id, format!("{} conflicts with {other}; only {other} is counted.", def.name));
+                continue;
+            }
+            Some(Skip::Aspiration) => {
+                if def.incompatible_note.is_empty() {
+                    warn(&def.id, format!("{}: has no effect on {} engines (ignored).", def.name, asp.label()));
+                } else {
+                    warn(&def.id, format!("{} (ignored for this {} car).", def.incompatible_note.trim_end_matches('.'), asp.label()));
+                }
+                continue;
+            }
+            None => seen.push(&def.id),
         }
 
         let applicable = |e: &&ModEffect| e.applies_to.is_empty() || e.applies_to.contains(&asp);
-        let eff = def.effects.iter().filter(applicable).find(|e| e.requires.iter().all(|r| selected.contains(r.as_str())));
+        let eff = def.effects.iter().filter(applicable).find(|e| e.requires.iter().all(|r| active.contains(&r.as_str())));
         let Some(eff) = eff else {
-            if def.effects.iter().any(|e| applicable(&e)) {
-                let needs: Vec<&str> = def
-                    .effects
-                    .iter()
-                    .filter(|e| applicable(e))
-                    .flat_map(|e| e.requires.iter())
-                    .filter_map(|r| find_def(defs, r).map(|d| d.name.as_str()))
-                    .collect();
-                warn(&def.id, format!("{}: requires {} (no effect counted).", def.name, needs.join(" or ")));
-            } else if def.incompatible_note.is_empty() {
-                warn(&def.id, format!("{}: has no effect on {} engines (ignored).", def.name, asp.label()));
-            } else {
-                warn(&def.id, format!("{} (ignored for this {} car).", def.incompatible_note.trim_end_matches('.'), asp.label()));
-            }
+            let needs: Vec<&str> = def
+                .effects
+                .iter()
+                .filter(applicable)
+                .flat_map(|e| e.requires.iter())
+                .filter_map(|r| find_def(defs, r).map(|d| d.name.as_str()))
+                .collect();
+            warn(&def.id, format!("{}: requires {} (no effect counted).", def.name, needs.join(" or ")));
             continue;
         };
 
@@ -126,16 +177,25 @@ pub fn evaluate(car: &Car, sels: &[ModSel], defs: &[ModDef]) -> Eval {
             None => 0.0,
         };
         let u = if eff.unit_div.abs() > f32::EPSILON { value / eff.unit_div } else { 0.0 };
-        let pct = [eff.min_pct + eff.unit_pct_min * u, 0.0, eff.max_pct + eff.unit_pct_max * u];
-        let pct = [pct[0], (pct[0] + pct[2]) / 2.0, pct[2]];
-        let flat = [eff.flat_hp + eff.unit_hp_min * u, 0.0, eff.flat_hp + eff.unit_hp_max * u];
-        let flat = [flat[0], (flat[0] + flat[2]) / 2.0, flat[2]];
+        let lo_pct = eff.min_pct + eff.unit_pct_min * u;
+        let hi_pct = eff.max_pct + eff.unit_pct_max * u;
+        let pct = [lo_pct, (lo_pct + hi_pct) / 2.0, hi_pct];
+        let lo_flat = eff.flat_hp + eff.unit_hp_min * u;
+        let hi_flat = eff.flat_hp + eff.unit_hp_max * u;
+        let flat = [lo_flat, (lo_flat + hi_flat) / 2.0, hi_flat];
 
         for i in 0..3 {
-            let before = hp[i];
-            let after = (before * (1.0 + pct[i] / 100.0) + flat[i]).max(1.0);
-            hp[i] = after;
-            tq[i] = (tq[i] + (after - before) * (tq[i] / before.max(1.0)) * eff.torque_factor).max(1.0);
+            if pct[i] != 0.0 {
+                let before = hp[i];
+                let after = (before * (1.0 + pct[i] / 100.0)).max(1.0);
+                hp[i] = after;
+                tq[i] = (tq[i] * (1.0 + (after / before - 1.0) * eff.torque_factor)).max(1.0);
+            }
+            if flat[i] != 0.0 {
+                // torque follows the engine's current torque/power ratio
+                flat_hp[i] += flat[i];
+                flat_tq[i] += flat[i] * (tq[i] / hp[i].max(1.0)) * eff.torque_factor;
+            }
         }
         weight += eff.weight_lbs + eff.unit_lbs * u;
         zs_mult[0] *= 1.0 + eff.zs_pct_min / 100.0;
@@ -150,9 +210,11 @@ pub fn evaluate(car: &Car, sels: &[ModSel], defs: &[ModDef]) -> Eval {
         modded = true;
     }
 
+    let hp: [f32; 3] = std::array::from_fn(|i| (hp[i] + flat_hp[i]).max(1.0));
+    let tq: [f32; 3] = std::array::from_fn(|i| (tq[i] + flat_tq[i]).max(1.0));
     let weight = weight.max(500.0);
     let zero_sixty = if modded {
-        let t = |h: f32, m: f32| estimate_zero_sixty(car, h, weight, traction) * m;
+        let t = |h: f32, m: f32| (estimate_zero_sixty(car, h, weight, traction) * m).clamp(ZERO_SIXTY_MIN, ZERO_SIXTY_MAX);
         let mid = (zs_mult[0] + zs_mult[1]) / 2.0;
         // quickest = most power and the most favourable direct modifier
         let fast = t(hp[2].max(hp[0]), zs_mult[0].min(zs_mult[1]));
@@ -172,6 +234,10 @@ pub fn evaluate(car: &Car, sels: &[ModSel], defs: &[ModDef]) -> Eval {
         warnings,
     }
 }
+
+/// Bounds for the estimated 0-60 (a de-tuned car can otherwise produce absurd times).
+pub const ZERO_SIXTY_MIN: f32 = 1.5;
+pub const ZERO_SIXTY_MAX: f32 = 60.0;
 
 #[cfg(test)]
 mod tests {
@@ -200,7 +266,7 @@ mod tests {
             zero_sixty_source: SourceKind::Est,
             weight_lbs: 3000,
             drivetrain: dt,
-            transmissions: vec!["6MT".into()],
+            transmission: "6MT".into(),
             redline_rpm: 7000,
             fuel: Fuel::Gas,
             confidence: Confidence::Estimated,
@@ -356,5 +422,149 @@ mod tests {
         let e = evaluate(&c, &[sel("e85", 0.0)], mod_defs());
         assert_eq!(e.hp.typ, 300.0);
         assert!(!e.warnings.is_empty());
+    }
+
+    fn all_ids(kind: Option<ModKind>) -> Vec<ModSel> {
+        mod_defs()
+            .iter()
+            .filter(|d| kind.map(|k| d.kind == k).unwrap_or(true))
+            .map(|d| sel(&d.id, d.slider.as_ref().map(|s| s.max).unwrap_or(0.0)))
+            .collect()
+    }
+    fn finite(e: &Eval) -> bool {
+        [e.hp.min, e.hp.typ, e.hp.max, e.torque.min, e.torque.typ, e.torque.max, e.zero_sixty.min, e.zero_sixty.typ, e.zero_sixty.max, e.weight_lbs]
+            .iter()
+            .all(|v| v.is_finite() && *v > 0.0)
+    }
+
+    #[test]
+    fn everything_stacked_stays_sane_for_every_aspiration() {
+        for asp in Aspiration::ALL {
+            for dt in Drivetrain::ALL {
+                let mut c = car(asp, 300, dt);
+                if asp == Aspiration::EV {
+                    c.fuel = Fuel::Electric;
+                    c.cylinders = 0;
+                    c.displacement_l = 0.0;
+                }
+                let e = evaluate(&c, &all_ids(Some(ModKind::Gain)), mod_defs());
+                assert!(finite(&e), "{asp:?} {dt:?}: {e:?}");
+                assert!(e.hp.min <= e.hp.typ && e.hp.typ <= e.hp.max, "{asp:?}: {:?}", e.hp);
+                assert!(e.zero_sixty.min <= e.zero_sixty.typ && e.zero_sixty.typ <= e.zero_sixty.max);
+                // every gain mod at once, sliders maxed (turbo kit + stage 2 + E85 + 150 shot ...):
+                // big but bounded, no runaway compounding
+                assert!(e.hp.max < 300.0 * 4.0, "{asp:?}: {:?}", e.hp);
+                let all = evaluate(&c, &all_ids(None), mod_defs());
+                assert!(finite(&all), "{asp:?} everything: {all:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn ev_only_takes_weight_tires_and_conditions() {
+        let mut c = car(Aspiration::EV, 480, Drivetrain::AWD);
+        c.fuel = Fuel::Electric;
+        let e = evaluate(&c, &[sel("intake", 0.0), sel("tune1", 0.0), sel("nitrous", 100.0), sel("downpipe", 0.0), sel("e85", 0.0)], mod_defs());
+        assert_eq!(e.hp.typ, 480.0);
+        assert!(!e.modded);
+        assert_eq!(e.warnings.len(), 5);
+        let e = evaluate(&c, &[sel("altitude", 10000.0)], mod_defs());
+        assert_eq!(e.hp.typ, 480.0, "EVs do not lose power with altitude");
+        let e = evaluate(&c, &[sel("weight_red", 300.0), sel("tires", 0.0)], mod_defs());
+        assert_eq!(e.weight_lbs, 2700.0);
+        assert!(e.zero_sixty.typ < 5.0);
+    }
+
+    #[test]
+    fn hybrid_behaves_like_na_for_bolt_ons() {
+        let mut h = car(Aspiration::Hybrid, 300, Drivetrain::AWD);
+        h.fuel = Fuel::Hybrid;
+        let n = car(Aspiration::NA, 300, Drivetrain::AWD);
+        let mods = [sel("intake", 0.0), sel("headers", 0.0), sel("altitude", 5000.0)];
+        assert_eq!(evaluate(&h, &mods, mod_defs()).hp, evaluate(&n, &mods, mod_defs()).hp);
+        // E85 needs a gasoline/flex fuel system
+        assert_eq!(evaluate(&h, &[sel("e85", 0.0)], mod_defs()).hp.typ, 300.0);
+    }
+
+    #[test]
+    fn negative_results_are_clamped_not_nonsense() {
+        let mut c = car(Aspiration::NA, 55, Drivetrain::FWD);
+        c.weight_lbs = 1650;
+        c.zero_sixty = 14.0;
+        let e = evaluate(&c, &[sel("custom", -200.0), sel("worn", 0.0), sel("altitude", 14000.0), sel("cargo", 1000.0)], mod_defs());
+        assert!(finite(&e), "{e:?}");
+        assert_eq!(e.hp.typ, 1.0);
+        assert!(e.zero_sixty.typ <= ZERO_SIXTY_MAX);
+    }
+
+    #[test]
+    fn extreme_altitude() {
+        let na = evaluate(&car(Aspiration::NA, 300, Drivetrain::RWD), &[sel("altitude", 14000.0)], mod_defs());
+        // 2.7-3.3 % per 1000 ft compounding once -> 38-46 % loss
+        assert!(na.hp.min > 300.0 * 0.5 && na.hp.max < 300.0 * 0.65, "{:?}", na.hp);
+        let tb = evaluate(&car(Aspiration::Turbo, 300, Drivetrain::RWD), &[sel("altitude", 14000.0)], mod_defs());
+        assert!(tb.hp.typ > 300.0 * 0.75 && tb.hp.typ < 300.0, "{:?}", tb.hp);
+        let sc = evaluate(&car(Aspiration::Supercharged, 300, Drivetrain::RWD), &[sel("altitude", 14000.0)], mod_defs());
+        assert!(sc.hp.typ > na.hp.typ && sc.hp.typ < tb.hp.typ);
+    }
+
+    #[test]
+    fn flat_gains_are_not_scaled_by_later_percentages() {
+        let c = car(Aspiration::NA, 300, Drivetrain::RWD);
+        let shot = evaluate(&c, &[sel("nitrous", 100.0)], mod_defs()).hp.typ - 300.0;
+        let alt = evaluate(&c, &[sel("altitude", 5000.0)], mod_defs()).hp.typ;
+        let both = evaluate(&c, &[sel("nitrous", 100.0), sel("altitude", 5000.0)], mod_defs()).hp.typ;
+        assert!((both - (alt + shot)).abs() < 0.01, "{both} vs {alt} + {shot}");
+        let custom = evaluate(&c, &[sel("custom", 25.0), sel("worn", 0.0)], mod_defs()).hp.typ;
+        let worn = evaluate(&c, &[sel("worn", 0.0)], mod_defs()).hp.typ;
+        assert!((custom - (worn + 25.0)).abs() < 0.01);
+    }
+
+    #[test]
+    fn ignored_mods_do_not_satisfy_requirements() {
+        let c = car(Aspiration::Turbo, 300, Drivetrain::AWD);
+        // tune2 loses the conflict to tune1, so the downpipe must use its tune1 effect
+        let both = evaluate(&c, &[sel("tune1", 0.0), sel("tune2", 0.0), sel("downpipe", 0.0)], mod_defs());
+        let t1 = evaluate(&c, &[sel("tune1", 0.0), sel("downpipe", 0.0)], mod_defs());
+        assert_eq!(both.hp, t1.hp);
+        // an NA car with tune2 + headers: headers count, so tune2 uses its "with headers" effect;
+        // a downpipe on that NA car is ignored and must not unlock anything
+        let na = car(Aspiration::NA, 300, Drivetrain::RWD);
+        let a = evaluate(&na, &[sel("tune2", 0.0), sel("downpipe", 0.0)], mod_defs());
+        let b = evaluate(&na, &[sel("tune2", 0.0)], mod_defs());
+        assert_eq!(a.hp, b.hp);
+    }
+
+    #[test]
+    fn order_of_selection_does_not_matter() {
+        let c = car(Aspiration::Turbo, 300, Drivetrain::AWD);
+        let a = evaluate(&c, &[sel("downpipe", 0.0), sel("tune2", 0.0), sel("intake", 0.0), sel("nitrous", 75.0)], mod_defs());
+        let b = evaluate(&c, &[sel("nitrous", 75.0), sel("intake", 0.0), sel("tune2", 0.0), sel("downpipe", 0.0)], mod_defs());
+        assert_eq!(a.hp, b.hp);
+        assert_eq!(a.zero_sixty, b.zero_sixty);
+    }
+
+    #[test]
+    fn modded_zero_sixty_is_calibrated_to_stock() {
+        // a mod with zero net effect must give back exactly the stock time
+        let c = car(Aspiration::Turbo, 300, Drivetrain::AWD);
+        let e = evaluate(&c, &[sel("custom", 0.0)], mod_defs());
+        assert!(e.modded);
+        assert!((e.zero_sixty.typ - c.zero_sixty).abs() < 1e-4);
+        // more power -> quicker, more weight -> slower, monotonic
+        let mut last = c.zero_sixty;
+        for hp in [25.0, 50.0, 100.0, 200.0] {
+            let t = evaluate(&c, &[sel("custom", hp)], mod_defs()).zero_sixty.typ;
+            assert!(t < last, "{hp}: {t} !< {last}");
+            last = t;
+        }
+    }
+
+    #[test]
+    fn turbo_kit_on_na_unlocks_turbo_only_parts() {
+        let c = car(Aspiration::NA, 200, Drivetrain::RWD);
+        let e = evaluate(&c, &[sel("turbo_kit", 0.0), sel("intercooler", 0.0), sel("pulley", 0.0)], mod_defs());
+        assert!(e.warnings.iter().any(|w| w.mod_id == "pulley"), "pulley is still not valid on a turbo car");
+        assert!(!e.warnings.iter().any(|w| w.mod_id == "intercooler"), "{:?}", e.warnings);
     }
 }

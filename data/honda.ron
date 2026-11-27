@@ -31,10 +31,10 @@
   (n:"Type R 2.0T (FK8)", code:"K20C1", d:2.0, c:4, a:Turbo, hp:306, hpr:6500, tq:295, tqr:2500, z:4.9, zs:Mag, w:3100, dt:FWD, tx:"6MT", rl:7000, y0:2017, conf:Verified),
  ]),
  (make:"Honda", model:"Civic", gen:"11th gen (2022-)", y0:2022, y1:2026, trims:[
-  (n:"LX/Sport 2.0", code:"K20C2? / R20", d:2.0, c:4, a:NA, hp:150, hpr:6500, tq:133, tqr:4300, z:8.5, w:2900, dt:FWD, tx:"CVT", rl:6800),
+  (n:"LX/Sport 2.0", code:"2.0 i-VTEC", d:2.0, c:4, a:NA, hp:150, hpr:6500, tq:133, tqr:4300, z:8.5, w:2900, dt:FWD, tx:"CVT", rl:6800),
   (n:"Sport Touring 1.5T Hatch", code:"L15CA", d:1.5, c:4, a:Turbo, hp:180, hpr:6000, tq:177, tqr:1700, z:7.2, w:3050, dt:FWD, tx:"6MT/CVT", rl:6500),
   (n:"Si 1.5T", code:"L15CA Si", d:1.5, c:4, a:Turbo, hp:200, hpr:6000, tq:192, tqr:1800, z:6.7, zs:Mag, w:3000, dt:FWD, tx:"6MT", rl:6500),
-  (n:"Type R 2.0T (FL5)", code:"K20C1", d:2.0, c:4, a:Turbo, hp:315, hpr:6500, tq:310, tqr:2600, z:4.9, zs:Mag, w:3190, dt:FWD, tx:"6MT", rl:7000, conf:Verified),
+  (n:"Type R 2.0T (FL5)", code:"K20C1", d:2.0, c:4, a:Turbo, hp:315, hpr:6500, tq:310, tqr:2600, z:4.9, zs:Mag, w:3190, dt:FWD, tx:"6MT", rl:7000, y0:2023, conf:Verified),
  ]),
  (make:"Honda", model:"Civic del Sol", gen:"1st gen", y0:1993, y1:1997, trims:[
   (n:"Si 1.6", code:"D16Z6", d:1.6, c:4, a:NA, hp:125, hpr:6600, tq:106, tqr:5200, z:8.9, w:2400, dt:FWD, tx:"5MT/4AT", rl:7200, y0:1993, y1:1997),
@@ -115,12 +115,13 @@
  (make:"Acura", model:"TL", gen:"2nd-4th gen", y0:1996, y1:2014, trims:[
   (n:"3.2 V6", code:"J32A", d:3.2, c:6, a:NA, hp:225, hpr:5500, tq:216, tqr:4500, z:7.0, w:3450, dt:FWD, tx:"5AT", rl:6300, y0:1999, y1:2003),
   (n:"Type-S 3.2", code:"J32A3", d:3.2, c:6, a:NA, hp:260, hpr:6100, tq:232, tqr:5000, z:6.3, zs:Mag, w:3600, dt:FWD, tx:"5AT", rl:6500, y0:2002, y1:2003, conf:Verified),
+  (n:"Type-S 3.5 (2007-08)", code:"J35A8", d:3.5, c:6, a:NA, hp:286, hpr:6200, tq:256, tqr:5000, z:5.9, zs:Mag, w:3650, dt:FWD, tx:"6MT/5AT", rl:6800, y0:2007, y1:2008),
   (n:"Type-S 3.5 SH-AWD (2009-14)", code:"J35Z", d:3.5, c:6, a:NA, hp:305, hpr:6200, tq:273, tqr:4500, z:5.6, zs:Mag, w:4100, dt:AWD, tx:"6AT", rl:6800, y0:2009, y1:2014, conf:Verified),
  ]),
  (make:"Acura", model:"TLX", gen:"1st/2nd gen", y0:2015, y1:2026, trims:[
   (n:"2.4 (1st gen)", code:"K24Z7", d:2.4, c:4, a:NA, hp:206, hpr:6800, tq:182, tqr:4400, z:7.0, w:3500, dt:FWD, tx:"8DCT", rl:7000, y0:2015, y1:2020),
   (n:"A-Spec 2.0T (2nd gen)", code:"K20C4", d:2.0, c:4, a:Turbo, hp:272, hpr:6500, tq:280, tqr:1600, z:5.9, zs:Mag, w:3800, dt:FWD, tx:"10AT", rl:6800, y0:2021),
-  (n:"Type S 3.0 TT", code:"J30CE? / V6TT", d:3.0, c:6, a:Turbo, hp:355, hpr:5500, tq:354, tqr:1400, z:4.5, zs:Mag, w:4300, dt:AWD, tx:"10AT", rl:6500, y0:2021, conf:Verified),
+  (n:"Type S 3.0T", code:"J30AC", d:3.0, c:6, a:Turbo, hp:355, hpr:5500, tq:354, tqr:1400, z:4.5, zs:Mag, w:4300, dt:AWD, tx:"10AT", rl:6500, y0:2021, conf:Verified),
  ]),
  (make:"Acura", model:"Integra", gen:"5th gen (2023-)", y0:2023, y1:2026, trims:[
   (n:"A-Spec 1.5T", code:"L15CA", d:1.5, c:4, a:Turbo, hp:200, hpr:6000, tq:192, tqr:1800, z:6.7, w:3000, dt:FWD, tx:"6MT/CVT", rl:6500, conf:Verified),
@@ -137,7 +138,7 @@
  (make:"Acura", model:"MDX / RDX", gen:"misc", y0:2001, y1:2026, trims:[
   (n:"MDX 3.5 (1st gen)", code:"J35A", d:3.5, c:6, a:NA, hp:240, hpr:5800, tq:245, tqr:3500, z:8.3, w:4300, dt:AWD, tx:"5AT", rl:6200, y0:2001, y1:2006),
   (n:"MDX 3.7 SH-AWD (2nd gen)", code:"J37A1", d:3.7, c:6, a:NA, hp:300, hpr:6300, tq:270, tqr:5000, z:6.8, zs:Mag, w:4500, dt:AWD, tx:"6AT", rl:6800, y0:2007, y1:2013),
-  (n:"MDX Type S 3.0T", code:"J30CE", d:3.0, c:6, a:Turbo, hp:355, hpr:5500, tq:354, tqr:1400, z:5.4, zs:Mag, w:4700, dt:AWD, tx:"10AT", rl:6500, y0:2022),
+  (n:"MDX Type S 3.0T", code:"J30AC", d:3.0, c:6, a:Turbo, hp:355, hpr:5500, tq:354, tqr:1400, z:5.4, zs:Mag, w:4700, dt:AWD, tx:"10AT", rl:6500, y0:2022),
   (n:"RDX 2.3T (1st gen)", code:"K23A1", d:2.3, c:4, a:Turbo, hp:240, hpr:6000, tq:260, tqr:4500, z:6.6, zs:Mag, w:3900, dt:AWD, tx:"5AT", rl:6500, y0:2007, y1:2012),
   (n:"RDX 2.0T (3rd gen)", code:"K20C4", d:2.0, c:4, a:Turbo, hp:272, hpr:6500, tq:280, tqr:1600, z:6.2, zs:Mag, w:3900, dt:AWD, tx:"10AT", rl:6800, y0:2019),
  ]),

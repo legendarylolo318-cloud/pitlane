@@ -2,6 +2,11 @@
 //! Must only depend on `serde`.
 
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+
+/// Text field of a [`Car`]. Bundled cars borrow it from the embedded, interned string table
+/// (no allocation); user overrides / custom cars own it.
+pub type Text = Cow<'static, str>;
 
 pub const YEAR_MIN: u16 = 1990;
 pub const YEAR_MAX: u16 = 2026;
@@ -16,6 +21,9 @@ pub enum Aspiration {
 }
 
 impl Aspiration {
+    pub fn from_u8(v: u8) -> Option<Self> {
+        Self::ALL.get(v as usize).copied()
+    }
     pub const ALL: [Aspiration; 5] = [
         Aspiration::NA,
         Aspiration::Turbo,
@@ -44,6 +52,9 @@ pub enum Drivetrain {
 }
 
 impl Drivetrain {
+    pub fn from_u8(v: u8) -> Option<Self> {
+        Self::ALL.get(v as usize).copied()
+    }
     pub const ALL: [Drivetrain; 4] = [Drivetrain::FWD, Drivetrain::RWD, Drivetrain::AWD, Drivetrain::FourWD];
     pub fn label(self) -> &'static str {
         match self {
@@ -66,6 +77,10 @@ pub enum Fuel {
 }
 
 impl Fuel {
+    pub const ALL: [Fuel; 5] = [Fuel::Gas, Fuel::Diesel, Fuel::Hybrid, Fuel::Electric, Fuel::Flex];
+    pub fn from_u8(v: u8) -> Option<Self> {
+        Self::ALL.get(v as usize).copied()
+    }
     pub fn label(self) -> &'static str {
         match self {
             Fuel::Gas => "Gasoline",
@@ -87,6 +102,10 @@ pub enum SourceKind {
 }
 
 impl SourceKind {
+    pub const ALL: [SourceKind; 3] = [SourceKind::Mfr, SourceKind::Mag, SourceKind::Est];
+    pub fn from_u8(v: u8) -> Option<Self> {
+        Self::ALL.get(v as usize).copied()
+    }
     pub fn label(self) -> &'static str {
         match self {
             SourceKind::Mfr => "manufacturer",
@@ -104,6 +123,10 @@ pub enum Confidence {
 }
 
 impl Confidence {
+    pub const ALL: [Confidence; 2] = [Confidence::Verified, Confidence::Estimated];
+    pub fn from_u8(v: u8) -> Option<Self> {
+        Self::ALL.get(v as usize).copied()
+    }
     pub fn label(self) -> &'static str {
         match self {
             Confidence::Verified => "verified",
@@ -115,15 +138,15 @@ impl Confidence {
 /// One fully-expanded car (one trim/engine of one generation).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Car {
-    pub id: String,
-    pub make: String,
-    pub parent_group: String,
-    pub model: String,
-    pub generation: String,
+    pub id: Text,
+    pub make: Text,
+    pub parent_group: Text,
+    pub model: Text,
+    pub generation: Text,
     pub year_start: u16,
     pub year_end: u16,
-    pub trim: String,
-    pub engine_code: String,
+    pub trim: Text,
+    pub engine_code: Text,
     pub displacement_l: f32,
     pub cylinders: u8,
     pub aspiration: Aspiration,
@@ -135,7 +158,8 @@ pub struct Car {
     pub zero_sixty_source: SourceKind,
     pub weight_lbs: u16,
     pub drivetrain: Drivetrain,
-    pub transmissions: Vec<String>,
+    /// Transmissions, `/`-separated (`"6MT/10AT"`). The first one decides manual vs automatic.
+    pub transmission: Text,
     /// 0 = unknown.
     pub redline_rpm: u16,
     pub fuel: Fuel,
@@ -143,14 +167,34 @@ pub struct Car {
 }
 
 impl Car {
-    /// Automatic if the first listed transmission is not a manual ("MT").
+    pub fn transmissions(&self) -> impl Iterator<Item = &str> {
+        self.transmission.split('/').map(str::trim).filter(|s| !s.is_empty())
+    }
+    /// Automatic if the first listed transmission is not a manual ("MT", incl. sequential "SMT").
     pub fn is_auto(&self) -> bool {
-        self.transmissions.first().map(|t| !t.contains("MT")).unwrap_or(false)
+        self.transmissions().next().map(|t| !t.contains("MT")).unwrap_or(false)
     }
     pub fn covers_year(&self, y: u16) -> bool {
         self.year_start <= y && y <= self.year_end
     }
 }
+
+// ---------- compact bundled format (written by build.rs, read by data.rs) ----------
+
+/// `cars.bin` layout, all little endian:
+/// ```text
+///   magic  b"PLC1"
+///   u32 string_count, then string_count x (u32 offset, u16 len)   -- interned UTF-8 strings
+///   u32 bytes_len, then the string bytes
+///   u32 make_count, then make_count x (u16 name, u16 group, u64 year_mask, u32 first_car, u32 car_count)
+///   u32 car_count, then car_count fixed-size records (CAR_RECORD_LEN bytes):
+///     u16 x 8 string ids: id make group model generation trim engine_code transmission
+///     u16 x 8: year_start year_end hp hp_rpm torque torque_rpm weight_lbs redline_rpm
+///     f32 x 2: displacement_l zero_sixty
+///     u8  x 6: cylinders aspiration drivetrain fuel zero_sixty_source confidence
+/// ```
+pub const CARS_MAGIC: &[u8; 4] = b"PLC1";
+pub const CAR_RECORD_LEN: usize = 16 + 16 + 8 + 6;
 
 // ---------- authoring format (data/*.ron) ----------
 
@@ -228,16 +272,17 @@ pub fn expand(file: &FileSrc) -> Vec<Car> {
     let mut out = Vec::new();
     for g in &file.gens {
         for t in &g.trims {
+            let tx: Vec<&str> = t.tx.split('/').map(str::trim).filter(|s| !s.is_empty()).collect();
             out.push(Car {
-                id: format!("{}-{}-{}-{}", slug(&g.make), slug(&g.model), slug(&g.generation), slug(&t.n)),
-                make: g.make.clone(),
-                parent_group: file.group.clone(),
-                model: g.model.clone(),
-                generation: g.generation.clone(),
+                id: format!("{}-{}-{}-{}", slug(&g.make), slug(&g.model), slug(&g.generation), slug(&t.n)).into(),
+                make: g.make.clone().into(),
+                parent_group: file.group.clone().into(),
+                model: g.model.clone().into(),
+                generation: g.generation.clone().into(),
                 year_start: t.y0.unwrap_or(g.y0),
                 year_end: t.y1.unwrap_or(g.y1),
-                trim: t.n.clone(),
-                engine_code: t.code.clone(),
+                trim: t.n.clone().into(),
+                engine_code: t.code.clone().into(),
                 displacement_l: t.d,
                 cylinders: t.c,
                 aspiration: t.a,
@@ -249,7 +294,7 @@ pub fn expand(file: &FileSrc) -> Vec<Car> {
                 zero_sixty_source: t.zs,
                 weight_lbs: t.w,
                 drivetrain: t.dt,
-                transmissions: t.tx.split('/').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect(),
+                transmission: tx.join("/").into(),
                 redline_rpm: t.rl,
                 fuel: t.f,
                 confidence: t.conf,
@@ -265,7 +310,7 @@ pub fn validate_car(c: &Car) -> Result<(), String> {
     if id.is_empty() || c.make.trim().is_empty() || c.model.trim().is_empty() || c.trim.trim().is_empty() {
         return Err(format!("{id}: missing required text field"));
     }
-    if c.parent_group.trim().is_empty() || c.engine_code.trim().is_empty() || c.transmissions.is_empty() {
+    if c.parent_group.trim().is_empty() || c.engine_code.trim().is_empty() || c.transmissions().next().is_none() {
         return Err(format!("{id}: missing group/engine code/transmission"));
     }
     if c.year_start < YEAR_MIN || c.year_end > YEAR_MAX || c.year_start > c.year_end {
@@ -280,7 +325,7 @@ pub fn validate_car(c: &Car) -> Result<(), String> {
     if !(1500..=10_000).contains(&c.weight_lbs) {
         return Err(format!("{id}: weight {} out of range", c.weight_lbs));
     }
-    if !(1.5..=20.0).contains(&c.zero_sixty) {
+    if !c.displacement_l.is_finite() || !(1.5..=20.0).contains(&c.zero_sixty) {
         return Err(format!("{id}: 0-60 {} out of range", c.zero_sixty));
     }
     if c.aspiration == Aspiration::EV {

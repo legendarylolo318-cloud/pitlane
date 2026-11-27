@@ -97,12 +97,17 @@ fn mark_best(cells: &mut [Cell], vals: &[f32], better: Better) {
     if better == Better::None || vals.len() < 2 {
         return;
     }
+    let same = |a: f32, b: f32| (a - b).abs() < b.abs() * 1e-4 + 1e-6;
+    // Nothing to highlight when every car ties (e.g. the same car added twice).
+    if vals.iter().all(|v| same(*v, vals[0])) {
+        return;
+    }
     let best = match better {
         Better::Higher => vals.iter().cloned().fold(f32::MIN, f32::max),
         _ => vals.iter().cloned().fold(f32::MAX, f32::min),
     };
     for (c, v) in cells.iter_mut().zip(vals) {
-        c.best = (v - best).abs() < best.abs() * 1e-4 + 1e-6;
+        c.best = same(*v, best);
     }
 }
 
@@ -123,7 +128,7 @@ pub fn build_table(views: &[SlotView], s: Settings) -> Table {
     let mut t = Table::default();
     let ms: Vec<Metrics> = views.iter().map(|v| metrics(v, s)).collect();
     for v in views {
-        t.headers.push(Header { title: car_title(v.year, v.car), subtitle: v.car.trim.clone(), modded: v.eval.modded });
+        t.headers.push(Header { title: car_title(v.year, v.car), subtitle: v.car.trim.to_string(), modded: v.eval.modded });
     }
     let est = |v: &SlotView| if v.eval.modded { " est." } else { "" };
 
@@ -204,7 +209,7 @@ pub fn build_table(views: &[SlotView], s: Settings) -> Table {
         }
     });
     text_row("Drivetrain", true, &|v| v.car.drivetrain.label().to_string());
-    text_row("Transmission", false, &|v| v.car.transmissions.join(" / "));
+    text_row("Transmission", false, &|v| v.car.transmissions().collect::<Vec<_>>().join(" / "));
     text_row("Redline", false, &|v| if v.car.redline_rpm == 0 { "unknown".into() } else { format!("{} rpm", v.car.redline_rpm) });
     text_row("Power peak", false, &|v| if v.car.hp_rpm == 0 { "rpm unknown".into() } else { format!("{} rpm", v.car.hp_rpm) });
     text_row("Torque peak", false, &|v| if v.car.torque_rpm == 0 { "rpm unknown".into() } else { format!("{} rpm", v.car.torque_rpm) });
@@ -297,5 +302,18 @@ mod tests {
         let t2 = build_table(&views, m);
         assert!(t2.rows[0].cells[0].text.contains("kW"));
         assert!(t2.rows[2].label.contains("100 km/h"));
+    }
+
+    #[test]
+    fn duplicate_cars_tie_without_a_winner() {
+        let db = Db::bundled();
+        let a = db.all_cars().next().unwrap();
+        let v = || SlotView { year: a.year_start, car: a, eval: evaluate(a, &[], mod_defs()) };
+        let t = build_table(&[v(), v()], Settings::default());
+        assert!(t.rows.iter().flat_map(|r| &r.cells).all(|c| !c.best));
+        // a single car is never "best" against itself either
+        let t = build_table(&[v()], Settings::default());
+        assert!(t.rows.iter().flat_map(|r| &r.cells).all(|c| !c.best));
+        assert!(build_table(&[], Settings::default()).rows.iter().all(|r| r.cells.is_empty()));
     }
 }

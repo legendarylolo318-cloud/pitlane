@@ -58,6 +58,15 @@ pub fn power_from_hp(p: PowerUnit, hp: f32) -> f32 {
     }
 }
 
+/// Inverse of [`power_from_hp`].
+pub fn hp_from_power(p: PowerUnit, v: f32) -> f32 {
+    match p {
+        PowerUnit::Hp => v,
+        PowerUnit::Kw => v / KW_PER_HP,
+        PowerUnit::Ps => v / PS_PER_HP,
+    }
+}
+
 pub fn power_label(p: PowerUnit) -> &'static str {
     match p {
         PowerUnit::Hp => "hp",
@@ -70,6 +79,14 @@ pub fn torque_from_lbft(s: UnitSystem, v: f32) -> f32 {
     match s {
         UnitSystem::Imperial => v,
         UnitSystem::Metric => v * NM_PER_LBFT,
+    }
+}
+
+/// Inverse of [`torque_from_lbft`].
+pub fn lbft_from_torque(s: UnitSystem, v: f32) -> f32 {
+    match s {
+        UnitSystem::Imperial => v,
+        UnitSystem::Metric => v / NM_PER_LBFT,
     }
 }
 
@@ -87,6 +104,14 @@ pub fn weight_from_lbs(s: UnitSystem, v: f32) -> f32 {
     }
 }
 
+/// Inverse of [`weight_from_lbs`].
+pub fn lbs_from_weight(s: UnitSystem, v: f32) -> f32 {
+    match s {
+        UnitSystem::Imperial => v,
+        UnitSystem::Metric => v / KG_PER_LB,
+    }
+}
+
 pub fn weight_label(s: UnitSystem) -> &'static str {
     match s {
         UnitSystem::Imperial => "lb",
@@ -98,6 +123,11 @@ pub fn weight_label(s: UnitSystem) -> &'static str {
 /// This is an approximation (documented in README), not a measurement.
 pub fn zero_sixty_to_100kmh(t60: f32) -> f32 {
     t60 * 1.04 + 0.05
+}
+
+/// Inverse of [`zero_sixty_to_100kmh`].
+pub fn zero_sixty_from_100kmh(t100: f32) -> f32 {
+    (t100 - 0.05) / 1.04
 }
 
 pub fn accel_from_60(s: UnitSystem, t60: f32) -> f32 {
@@ -171,5 +201,74 @@ mod tests {
         let m = Settings { system: UnitSystem::Metric, power: PowerUnit::Kw, ..Settings::default() };
         let v = power_per_ton(m, 300.0, 3000.0);
         assert!((v - 164.4).abs() < 0.5, "{v}");
+    }
+
+    #[test]
+    fn conversions_round_trip() {
+        for v in [1.0f32, 55.0, 300.0, 1064.0, 1500.0] {
+            for p in [PowerUnit::Hp, PowerUnit::Kw, PowerUnit::Ps] {
+                let back = hp_from_power(p, power_from_hp(p, v));
+                assert!((back - v).abs() < v * 1e-5, "{p:?} {v} -> {back}");
+            }
+            for s in [UnitSystem::Imperial, UnitSystem::Metric] {
+                assert!((lbft_from_torque(s, torque_from_lbft(s, v)) - v).abs() < v * 1e-5);
+                assert!((lbs_from_weight(s, weight_from_lbs(s, v)) - v).abs() < v * 1e-5);
+            }
+        }
+        for t in [2.3f32, 4.0, 9.5, 17.0] {
+            assert!((zero_sixty_from_100kmh(zero_sixty_to_100kmh(t)) - t).abs() < 1e-4);
+        }
+        // published pairs: 1 kW = 1.341 hp, 1 PS = 0.9863 hp, 100 lb-ft = 135.6 Nm
+        assert!((hp_from_power(PowerUnit::Kw, 1.0) - 1.341).abs() < 0.001);
+        assert!((hp_from_power(PowerUnit::Ps, 1.0) - 0.9863).abs() < 0.0001);
+        // 0-100 km/h (62.1 mph) is always a little slower than 0-60
+        assert!(zero_sixty_to_100kmh(2.5) > 2.5 && zero_sixty_to_100kmh(2.5) < 2.8);
+    }
+
+    fn test_car(dt: Drivetrain, tx: &'static str) -> Car {
+        Car {
+            id: "t".into(),
+            make: "T".into(),
+            parent_group: "G".into(),
+            model: "M".into(),
+            generation: "g".into(),
+            year_start: 2010,
+            year_end: 2010,
+            trim: "x".into(),
+            engine_code: "e".into(),
+            displacement_l: 2.0,
+            cylinders: 4,
+            aspiration: Aspiration::NA,
+            hp: 300,
+            hp_rpm: 0,
+            torque: 300,
+            torque_rpm: 0,
+            zero_sixty: 5.0,
+            zero_sixty_source: crate::model::SourceKind::Est,
+            weight_lbs: 3000,
+            drivetrain: dt,
+            transmission: tx.into(),
+            redline_rpm: 0,
+            fuel: crate::model::Fuel::Gas,
+            confidence: crate::model::Confidence::Estimated,
+        }
+    }
+
+    #[test]
+    fn wheel_power_loss_by_layout() {
+        let l = LossCfg::default();
+        let f = |dt, tx| wheel_factor(&test_car(dt, tx), Aspiration::NA, &l);
+        assert!((f(Drivetrain::RWD, "6MT/8AT") - 0.88).abs() < 1e-6, "first listed transmission decides");
+        assert!((f(Drivetrain::FWD, "8AT/6MT") - 0.85).abs() < 1e-6);
+        assert!((f(Drivetrain::AWD, "6MT") - 0.82).abs() < 1e-6);
+        assert!((f(Drivetrain::FourWD, "10AT") - 0.80).abs() < 1e-6);
+        assert!((f(Drivetrain::AWD, "CVT") - 0.80).abs() < 1e-6);
+        assert!((f(Drivetrain::RWD, "7DCT") - 0.85).abs() < 1e-6, "DCT counts as automatic");
+        assert!((f(Drivetrain::RWD, "6SMT") - 0.88).abs() < 1e-6, "sequential manual counts as manual");
+        // EVs use the EV loss whatever the layout; a turbo kit does not change the layout loss
+        assert!((wheel_factor(&test_car(Drivetrain::AWD, "1AT"), Aspiration::EV, &l) - 0.92).abs() < 1e-6);
+        // silly user settings are clamped
+        let bad = LossCfg { two_wd_manual: 500.0, ..l };
+        assert!(wheel_factor(&test_car(Drivetrain::RWD, "6MT"), Aspiration::NA, &bad) >= 0.4);
     }
 }

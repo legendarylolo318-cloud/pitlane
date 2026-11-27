@@ -36,11 +36,17 @@ pub fn parse_year(tok: &str) -> Option<u16> {
     (YEAR_MIN..=YEAR_MAX).contains(&y).then_some(y)
 }
 
-fn score_text(tokens: &[String], hay: &str) -> Option<i32> {
+fn score_text(tokens: &[String], hay: &str, words: &str) -> Option<i32> {
     let mut total = 0;
     for t in tokens {
         if hay.contains(t.as_str()) {
             total += 100;
+            // prefer "sti" -> "WRX STI" over "sti" inside "Stingray"
+            if words.split(' ').any(|w| w == t) {
+                total += 60;
+            } else if words.split(' ').any(|w| w.starts_with(t.as_str())) {
+                total += 20;
+            }
         } else if t.len() >= 3 && is_subsequence(t, hay) {
             total += 25;
         } else {
@@ -76,28 +82,32 @@ pub fn search(db: &Db, query: &str, limit: usize) -> Vec<Hit> {
         if tokens.is_empty() && year.is_none() {
             continue;
         }
-        let mut hits: Vec<Hit> = Vec::new();
-        for c in db.all_cars() {
+        // Score against the cached normalized keys; only the winners get a label String.
+        let mut scored: Vec<(i32, &Car)> = Vec::new();
+        for k in db.search_keys() {
+            let Some(c) = db.car_at(k.make, k.index) else { continue };
             if let Some(y) = year {
                 if !c.covers_year(y) {
                     continue;
                 }
             }
-            let hay = normalize(&format!("{} {} {} {} {}", c.make, c.model, c.trim, c.generation, c.engine_code));
-            let Some(mut score) = score_text(&tokens, &hay) else { continue };
-            score -= (hay.len() / 8) as i32;
-            let y = year.unwrap_or(c.year_end);
-            hits.push(Hit {
-                car_id: c.id.clone(),
-                year: y,
-                label: format!("{} {} {} {}", y, c.make, c.model, c.trim),
-                score,
-            });
+            let Some(score) = score_text(&tokens, &k.hay, &k.words) else { continue };
+            scored.push((score - (k.hay.len() / 8) as i32, c));
         }
-        if !hits.is_empty() {
-            hits.sort_by(|a, b| b.score.cmp(&a.score).then(a.label.cmp(&b.label)));
-            hits.truncate(limit);
-            return hits;
+        if !scored.is_empty() {
+            let label = |c: &Car| {
+                let y = year.unwrap_or(c.year_end);
+                (y, format!("{} {} {} {}", y, c.make, c.model, c.trim))
+            };
+            scored.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.model.cmp(&b.1.model)).then_with(|| a.1.trim.cmp(&b.1.trim)));
+            return scored
+                .into_iter()
+                .take(limit)
+                .map(|(score, c)| {
+                    let (year, label) = label(c);
+                    Hit { car_id: c.id.to_string(), year, label, score }
+                })
+                .collect();
         }
     }
     Vec::new()
@@ -125,6 +135,18 @@ mod tests {
         assert!(h[0].label.contains("Civic") && h[0].year == 2006, "{:?}", h[0]);
         let h = search(&db, "lx570", 5);
         assert!(h.iter().any(|x| x.label.contains("LX")), "{h:?}");
+        let h = search(&db, "2020 supra", 5);
+        assert!(h[0].label.contains("Supra") && h[0].year == 2020, "{h:?}");
+        let h = search(&db, "hellcat", 20);
+        assert!(h.iter().any(|x| x.label.contains("Challenger")) && h.iter().any(|x| x.label.contains("Charger")), "{h:?}");
+        let h = search(&db, "'15 sti", 5);
+        assert!(h[0].label.contains("WRX STI") && h[0].year == 2015, "{h:?}");
+        let h = search(&db, "c8 z06", 5);
+        assert!(h[0].label.contains("Z06"), "{h:?}");
+        // subsequence fallback for typos with letters skipped
+        assert!(!search(&db, "mstang", 5).is_empty());
+        // year outside the dataset is treated as text, so it simply finds nothing
+        assert!(search(&db, "1985 mustang", 5).iter().all(|x| x.year >= YEAR_MIN));
         assert!(search(&db, "zzzzqq", 5).is_empty());
         assert!(search(&db, "", 5).is_empty());
     }
