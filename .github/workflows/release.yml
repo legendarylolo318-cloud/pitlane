@@ -1,0 +1,84 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libfontconfig1-dev libxcb1-dev libwayland-dev libgl1-mesa-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+      - run: cargo test --workspace
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  linux:
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libfontconfig1-dev libxcb1-dev libwayland-dev libgl1-mesa-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libfuse2
+      - run: cargo build --release -p pitlane-app --bin pitlane
+      - name: Build AppImage
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/64x64/apps
+          cp target/release/pitlane AppDir/usr/bin/
+          cp packaging/pitlane.desktop AppDir/usr/share/applications/
+          cp packaging/pitlane.desktop AppDir/
+          cp crates/pitlane-app/assets/icon.png AppDir/pitlane.png
+          cp crates/pitlane-app/assets/icon.png AppDir/usr/share/icons/hicolor/64x64/apps/pitlane.png
+          ln -sf usr/bin/pitlane AppDir/AppRun
+          curl -L -o appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir Pitlane-x86_64.AppImage
+      - uses: actions/upload-artifact@v4
+        with: { name: linux, path: Pitlane-x86_64.AppImage }
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-pc-windows-msvc }
+      - run: cargo build --release -p pitlane-app --bin pitlane --target x86_64-pc-windows-msvc
+      - run: Copy-Item target/x86_64-pc-windows-msvc/release/pitlane.exe Pitlane-x86_64-windows.exe
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: Pitlane-x86_64-windows.exe }
+
+  android:
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-linux-android }
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125"
+      - run: cargo install cargo-apk --locked
+      - name: Build APK
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
+        run: cargo apk build --release -p pitlane-app --lib --no-default-features --features renderer-software
+      - run: cp target/release/apk/*.apk Pitlane-android.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: android, path: Pitlane-android.apk }
+
+  release:
+    needs: [linux, windows, android]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dist, merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

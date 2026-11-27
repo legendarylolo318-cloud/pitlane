@@ -1,0 +1,295 @@
+#![enable(implicit_some)]
+(group:"GM / Chevy family", gens:[
+ // ---------------- CHEVROLET ----------------
+ (make:"Chevrolet", model:"Camaro", gen:"4th gen (1993-2002)", y0:1993, y1:2002, trims:[
+  (n:"V6 3.4/3.8", code:"3.8 L36", d:3.8, c:6, a:NA, hp:200, hpr:5200, tq:225, tqr:4000, z:7.0, w:3400, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1996),
+  (n:"Z28 LT1 5.7", code:"LT1", d:5.7, c:8, a:NA, hp:275, hpr:5000, tq:325, tqr:2400, z:5.7, zs:Mag, w:3450, dt:RWD, tx:"6MT/4AT", rl:5800, y1:1997, conf:Verified),
+  (n:"Z28 / SS LS1 5.7", code:"LS1", d:5.7, c:8, a:NA, hp:305, hpr:5200, tq:335, tqr:4000, z:5.3, zs:Mag, w:3350, dt:RWD, tx:"6MT/4AT", rl:6000, y0:1998, conf:Verified),
+  (n:"SS LS1 (WS6)", code:"LS1 SS", d:5.7, c:8, a:NA, hp:320, hpr:5200, tq:345, tqr:4000, z:5.0, zs:Mag, w:3500, dt:RWD, tx:"6MT/4AT", rl:6000, y0:1998, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Camaro", gen:"5th gen (2010-15)", y0:2010, y1:2015, trims:[
+  (n:"LS/LT 3.6 V6", code:"LFX", d:3.6, c:6, a:NA, hp:323, hpr:6800, tq:278, tqr:4800, z:5.4, zs:Mag, w:3700, dt:RWD, tx:"6MT/6AT", rl:7000, y0:2012, conf:Verified),
+  (n:"SS 6.2 V8", code:"L99/LS3", d:6.2, c:8, a:NA, hp:426, hpr:5900, tq:420, tqr:4600, z:4.5, zs:Mag, w:3900, dt:RWD, tx:"6MT/6AT", rl:6200, conf:Verified),
+  (n:"ZL1 6.2 SC", code:"LSA", d:6.2, c:8, a:Supercharged, hp:580, hpr:6000, tq:556, tqr:4200, z:3.9, zs:Mag, w:4150, dt:RWD, tx:"6MT/6AT", rl:6200, y0:2012, conf:Verified),
+  (n:"Z/28 7.0 V8", code:"LS7", d:7.0, c:8, a:NA, hp:505, hpr:6300, tq:481, tqr:4800, z:3.9, zs:Mag, w:3830, dt:RWD, tx:"6MT", rl:7000, y0:2014, y1:2015, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Camaro", gen:"6th gen (2016-24)", y0:2016, y1:2024, trims:[
+  (n:"LT 2.0T", code:"LTG", d:2.0, c:4, a:Turbo, hp:275, hpr:5600, tq:295, tqr:3000, z:5.4, zs:Mag, w:3350, dt:RWD, tx:"6MT/8AT", rl:6500, conf:Verified),
+  (n:"LT 3.6 V6", code:"LGX", d:3.6, c:6, a:NA, hp:335, hpr:6800, tq:284, tqr:5300, z:5.1, zs:Mag, w:3450, dt:RWD, tx:"6MT/8AT", rl:7000, conf:Verified),
+  (n:"SS 6.2 V8", code:"LT1", d:6.2, c:8, a:NA, hp:455, hpr:6000, tq:455, tqr:4400, z:4.0, zs:Mag, w:3700, dt:RWD, tx:"6MT/8AT/10AT", rl:6600, conf:Verified),
+  (n:"ZL1 6.2 SC", code:"LT4", d:6.2, c:8, a:Supercharged, hp:650, hpr:6400, tq:650, tqr:3600, z:3.5, zs:Mag, w:3900, dt:RWD, tx:"6MT/10AT", rl:6500, conf:Verified),
+  (n:"ZL1 1LE", code:"LT4", d:6.2, c:8, a:Supercharged, hp:650, hpr:6400, tq:650, tqr:3600, z:3.4, zs:Mag, w:3880, dt:RWD, tx:"6MT/10AT", rl:6500, y0:2018, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Corvette", gen:"C4 (1990-96)", y0:1990, y1:1996, trims:[
+  (n:"Base L98 5.7", code:"L98", d:5.7, c:8, a:NA, hp:245, hpr:4300, tq:340, tqr:3200, z:5.9, zs:Mag, w:3300, dt:RWD, tx:"6MT/4AT", rl:5500, y1:1991),
+  (n:"Base LT1 5.7", code:"LT1", d:5.7, c:8, a:NA, hp:300, hpr:5000, tq:340, tqr:3600, z:5.3, zs:Mag, w:3300, dt:RWD, tx:"6MT/4AT", rl:5800, y0:1992, conf:Verified),
+  (n:"ZR-1 5.7 LT5", code:"LT5", d:5.7, c:8, a:NA, hp:375, hpr:5800, tq:370, tqr:5600, z:4.5, zs:Mag, w:3500, dt:RWD, tx:"6MT", rl:7000, y1:1992, conf:Verified),
+  (n:"ZR-1 5.7 LT5 (1993-95)", code:"LT5", d:5.7, c:8, a:NA, hp:405, hpr:5800, tq:385, tqr:5200, z:4.4, zs:Mag, w:3500, dt:RWD, tx:"6MT", rl:7000, y0:1993, conf:Verified),
+  (n:"Grand Sport LT4", code:"LT4", d:5.7, c:8, a:NA, hp:330, hpr:5800, tq:340, tqr:4500, z:4.9, zs:Mag, w:3400, dt:RWD, tx:"6MT", rl:6000, y0:1996, y1:1996, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Corvette", gen:"C5 (1997-2004)", y0:1997, y1:2004, trims:[
+  (n:"Base LS1", code:"LS1", d:5.7, c:8, a:NA, hp:345, hpr:5600, tq:350, tqr:4400, z:4.7, zs:Mag, w:3250, dt:RWD, tx:"6MT/4AT", rl:6000, y1:2000, conf:Verified),
+  (n:"Base LS1 (2001+)", code:"LS1", d:5.7, c:8, a:NA, hp:350, hpr:5600, tq:360, tqr:4400, z:4.6, zs:Mag, w:3250, dt:RWD, tx:"6MT/4AT", rl:6000, y0:2001, conf:Verified),
+  (n:"Z06 LS6", code:"LS6", d:5.7, c:8, a:NA, hp:385, hpr:6000, tq:385, tqr:4800, z:4.1, zs:Mag, w:3120, dt:RWD, tx:"6MT", rl:6500, y0:2001, y1:2001, conf:Verified),
+  (n:"Z06 LS6 (2002-04)", code:"LS6", d:5.7, c:8, a:NA, hp:405, hpr:6000, tq:400, tqr:4800, z:3.9, zs:Mag, w:3115, dt:RWD, tx:"6MT", rl:6500, y0:2002, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Corvette", gen:"C6 (2005-13)", y0:2005, y1:2013, trims:[
+  (n:"Base LS2", code:"LS2", d:6.0, c:8, a:NA, hp:400, hpr:6000, tq:400, tqr:4400, z:4.2, zs:Mag, w:3200, dt:RWD, tx:"6MT/6AT", rl:6500, y1:2007, conf:Verified),
+  (n:"Base LS3", code:"LS3", d:6.2, c:8, a:NA, hp:430, hpr:5900, tq:424, tqr:4600, z:4.0, zs:Mag, w:3300, dt:RWD, tx:"6MT/6AT", rl:6600, y0:2008, conf:Verified),
+  (n:"Z06 LS7", code:"LS7", d:7.0, c:8, a:NA, hp:505, hpr:6300, tq:470, tqr:4800, z:3.6, zs:Mag, w:3130, dt:RWD, tx:"6MT", rl:7000, y0:2006, conf:Verified),
+  (n:"ZR1 LS9", code:"LS9", d:6.2, c:8, a:Supercharged, hp:638, hpr:6500, tq:604, tqr:3800, z:3.4, zs:Mag, w:3340, dt:RWD, tx:"6MT", rl:6600, y0:2009, conf:Verified),
+  (n:"Grand Sport LS3", code:"LS3", d:6.2, c:8, a:NA, hp:430, hpr:5900, tq:424, tqr:4600, z:3.9, zs:Mag, w:3300, dt:RWD, tx:"6MT/6AT", rl:6600, y0:2010, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Corvette", gen:"C7 (2014-19)", y0:2014, y1:2019, trims:[
+  (n:"Stingray LT1", code:"LT1", d:6.2, c:8, a:NA, hp:455, hpr:6000, tq:460, tqr:4600, z:3.8, zs:Mag, w:3300, dt:RWD, tx:"7MT/6AT/8AT", rl:6600, conf:Verified),
+  (n:"Z06 LT4", code:"LT4", d:6.2, c:8, a:Supercharged, hp:650, hpr:6400, tq:650, tqr:3600, z:3.0, zs:Mag, w:3524, dt:RWD, tx:"7MT/8AT", rl:6500, y0:2015, conf:Verified),
+  (n:"Grand Sport LT1", code:"LT1", d:6.2, c:8, a:NA, hp:460, hpr:6000, tq:465, tqr:4600, z:3.7, zs:Mag, w:3428, dt:RWD, tx:"7MT/8AT", rl:6600, y0:2017, conf:Verified),
+  (n:"ZR1 LT5", code:"LT5", d:6.2, c:8, a:Supercharged, hp:755, hpr:6300, tq:715, tqr:4400, z:2.8, zs:Mfr, w:3560, dt:RWD, tx:"7MT/8AT", rl:6500, y0:2019, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Corvette", gen:"C8 (2020-)", y0:2020, y1:2026, trims:[
+  (n:"Stingray LT2", code:"LT2", d:6.2, c:8, a:NA, hp:495, hpr:6450, tq:470, tqr:5150, z:2.9, zs:Mag, w:3535, dt:RWD, tx:"8DCT", rl:6600, conf:Verified),
+  (n:"Z06 LT6", code:"LT6", d:5.5, c:8, a:NA, hp:670, hpr:8400, tq:460, tqr:6300, z:2.6, zs:Mag, w:3434, dt:RWD, tx:"8DCT", rl:8600, y0:2023, conf:Verified),
+  (n:"E-Ray", code:"LT2 + e-motor", d:6.2, c:8, a:Hybrid, hp:655, hpr:6450, tq:595, tqr:5150, z:2.5, zs:Mfr, w:3774, dt:AWD, tx:"8DCT", rl:6600, y0:2024, f:Hybrid),
+  (n:"ZR1 LT7 twin-turbo", code:"LT7", d:5.5, c:8, a:Turbo, hp:1064, hpr:7000, tq:828, tqr:6000, z:2.3, zs:Mfr, w:3670, dt:RWD, tx:"8DCT", rl:8000, y0:2025, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Silverado 1500", gen:"GMT400 (1990-98 C/K)", y0:1990, y1:1998, trims:[
+  (n:"4.3 V6", code:"L35", d:4.3, c:6, a:NA, hp:160, hpr:4000, tq:235, tqr:2800, z:10.8, w:3900, dt:RWD, tx:"5MT/4AT", rl:4800),
+  (n:"5.7 V8 4x4", code:"L05 Vortec", d:5.7, c:8, a:NA, hp:255, hpr:4600, tq:330, tqr:2800, z:8.5, w:4600, dt:FourWD, tx:"5MT/4AT", rl:5000),
+ ]),
+ (make:"Chevrolet", model:"Silverado 1500", gen:"GMT800 (1999-2006)", y0:1999, y1:2006, trims:[
+  (n:"4.3 V6", code:"LU3", d:4.3, c:6, a:NA, hp:195, hpr:4400, tq:260, tqr:2800, z:10.0, w:4300, dt:RWD, tx:"5MT/4AT", rl:5200),
+  (n:"4.8 V8", code:"LR4", d:4.8, c:8, a:NA, hp:255, hpr:5200, tq:285, tqr:4000, z:8.9, w:4400, dt:RWD, tx:"4AT", rl:5800),
+  (n:"5.3 V8", code:"LM4/LM7", d:5.3, c:8, a:NA, hp:285, hpr:5200, tq:325, tqr:4000, z:8.0, zs:Mag, w:4700, dt:FourWD, tx:"4AT", rl:5800),
+  (n:"SS 6.0 V8 AWD", code:"LQ9", d:6.0, c:8, a:NA, hp:345, hpr:5200, tq:380, tqr:4000, z:6.8, zs:Mag, w:4800, dt:AWD, tx:"4AT", rl:5800, y0:2003, y1:2007),
+ ]),
+ (make:"Chevrolet", model:"Silverado 1500", gen:"GMT900 (2007-13)", y0:2007, y1:2013, trims:[
+  (n:"4.3 V6", code:"LU3", d:4.3, c:6, a:NA, hp:195, hpr:4600, tq:260, tqr:3600, z:9.9, w:4300, dt:RWD, tx:"4AT/6AT", rl:5200),
+  (n:"5.3 V8 Flex", code:"LC9/LMG", d:5.3, c:8, a:NA, hp:315, hpr:5200, tq:338, tqr:4000, z:7.4, zs:Mag, w:4850, dt:RWD, tx:"4AT/6AT", rl:6000, f:Flex),
+  (n:"6.2 V8", code:"L92", d:6.2, c:8, a:NA, hp:403, hpr:5700, tq:417, tqr:4300, z:6.2, zs:Mag, w:5100, dt:FourWD, tx:"6AT", rl:6000, y0:2009),
+ ]),
+ (make:"Chevrolet", model:"Silverado 1500", gen:"K2XX (2014-18)", y0:2014, y1:2018, trims:[
+  (n:"4.3 V6", code:"LV3", d:4.3, c:6, a:NA, hp:285, hpr:5300, tq:305, tqr:3900, z:7.9, w:4400, dt:RWD, tx:"6AT", rl:5800),
+  (n:"5.3 V8", code:"L83", d:5.3, c:8, a:NA, hp:355, hpr:5600, tq:383, tqr:4100, z:6.6, zs:Mag, w:4800, dt:RWD, tx:"6AT/8AT", rl:6000, conf:Verified),
+  (n:"6.2 V8", code:"L86", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:5.8, zs:Mag, w:5200, dt:FourWD, tx:"8AT", rl:6000, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Silverado 1500", gen:"T1XX (2019-26)", y0:2019, y1:2026, trims:[
+  (n:"2.7 Turbo", code:"L3B", d:2.7, c:4, a:Turbo, hp:310, hpr:5600, tq:430, tqr:3000, z:6.7, zs:Mag, w:4500, dt:RWD, tx:"8AT", rl:6000, conf:Verified),
+  (n:"5.3 V8", code:"L84", d:5.3, c:8, a:NA, hp:355, hpr:5600, tq:383, tqr:4100, z:6.5, w:4900, dt:FourWD, tx:"8AT/10AT", rl:6000),
+  (n:"6.2 V8", code:"L87", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:5.7, w:5300, dt:FourWD, tx:"10AT", rl:6000, conf:Verified),
+  (n:"3.0 Duramax", code:"LM2", d:3.0, c:6, a:Turbo, hp:277, hpr:3750, tq:460, tqr:1500, z:7.5, w:5000, dt:FourWD, tx:"10AT", f:Diesel, rl:4500),
+  (n:"ZR2 6.2 V8", code:"L87", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:6.1, w:5600, dt:FourWD, tx:"10AT", rl:6000, y0:2022),
+  (n:"Silverado EV RST", code:"EV dual-motor", d:0.0, c:0, a:EV, hp:754, tq:785, z:4.4, zs:Mfr, w:8500, dt:FourWD, tx:"1AT", f:Electric, y0:2024),
+ ]),
+ (make:"Chevrolet", model:"Impala SS / Caprice", gen:"B-body (1994-96)", y0:1994, y1:1996, trims:[
+  (n:"Impala SS 5.7 LT1", code:"LT1", d:5.7, c:8, a:NA, hp:260, hpr:5000, tq:330, tqr:2400, z:7.0, zs:Mag, w:4000, dt:RWD, tx:"4AT", rl:5500),
+ ]),
+ (make:"Chevrolet", model:"Impala SS", gen:"W-body (2004-09)", y0:2004, y1:2009, trims:[
+  (n:"SS 5.3 V8", code:"LS4", d:5.3, c:8, a:NA, hp:303, hpr:5000, tq:323, tqr:4000, z:6.2, zs:Mag, w:3850, dt:FWD, tx:"4AT", rl:5800, y0:2006),
+ ]),
+ (make:"Chevrolet", model:"Monte Carlo SS", gen:"6th gen", y0:2000, y1:2007, trims:[
+  (n:"SS 3.8 SC", code:"L67", d:3.8, c:6, a:Supercharged, hp:240, hpr:5200, tq:280, tqr:3600, z:6.8, w:3500, dt:FWD, tx:"4AT", rl:5800, y0:2004, y1:2005),
+ ]),
+ (make:"Chevrolet", model:"Cobalt SS", gen:"1st gen", y0:2005, y1:2010, trims:[
+  (n:"SS Supercharged 2.0", code:"LSJ", d:2.0, c:4, a:Supercharged, hp:205, hpr:5600, tq:200, tqr:4400, z:6.5, zs:Mag, w:2950, dt:FWD, tx:"5MT", rl:6500, y1:2007),
+  (n:"SS Turbocharged 2.0", code:"LNF", d:2.0, c:4, a:Turbo, hp:260, hpr:5300, tq:260, tqr:2000, z:5.4, zs:Mag, w:3050, dt:FWD, tx:"5MT", rl:6500, y0:2008, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Cavalier Z24", gen:"2nd gen", y0:1995, y1:2005, trims:[
+  (n:"Z24 2.4 DOHC", code:"LD9", d:2.4, c:4, a:NA, hp:150, hpr:5600, tq:155, tqr:4400, z:8.3, w:2800, dt:FWD, tx:"5MT/4AT", rl:6500, y0:2000),
+ ]),
+ (make:"Chevrolet", model:"SSR", gen:"1st gen", y0:2003, y1:2006, trims:[
+  (n:"5.3 V8", code:"LM4", d:5.3, c:8, a:NA, hp:300, hpr:5200, tq:331, tqr:4000, z:7.4, w:4760, dt:RWD, tx:"4AT", rl:5800, y1:2004),
+  (n:"6.0 V8", code:"LS2", d:6.0, c:8, a:NA, hp:390, hpr:5400, tq:405, tqr:4400, z:5.3, zs:Mag, w:4800, dt:RWD, tx:"6MT/4AT", rl:6000, y0:2005),
+ ]),
+ (make:"Chevrolet", model:"HHR SS", gen:"1st gen", y0:2008, y1:2010, trims:[
+  (n:"SS Turbo 2.0", code:"LNF", d:2.0, c:4, a:Turbo, hp:260, hpr:5300, tq:260, tqr:2000, z:6.0, zs:Mag, w:3350, dt:FWD, tx:"5MT", rl:6500),
+ ]),
+ (make:"Chevrolet", model:"TrailBlazer SS", gen:"1st gen", y0:2006, y1:2009, trims:[
+  (n:"SS 6.0 V8", code:"LS2", d:6.0, c:8, a:NA, hp:395, hpr:5400, tq:400, tqr:4400, z:5.7, zs:Mag, w:4800, dt:AWD, tx:"4AT", rl:6000),
+ ]),
+ (make:"Chevrolet", model:"Tahoe", gen:"GMT900/K2XX/T1XX", y0:2007, y1:2026, trims:[
+  (n:"5.3 V8 (2007-14)", code:"LC9", d:5.3, c:8, a:NA, hp:320, hpr:5200, tq:335, tqr:4000, z:7.6, w:5400, dt:RWD, tx:"6AT", rl:6000, f:Flex, y1:2014),
+  (n:"5.3 V8 (2015-20)", code:"L83", d:5.3, c:8, a:NA, hp:355, hpr:5600, tq:383, tqr:4100, z:6.9, w:5400, dt:FourWD, tx:"6AT", rl:6000, y0:2015, y1:2020),
+  (n:"5.3 V8 (2021+)", code:"L84", d:5.3, c:8, a:NA, hp:355, hpr:5600, tq:383, tqr:4100, z:6.8, w:5600, dt:FourWD, tx:"10AT", rl:6000, y0:2021),
+  (n:"RST 6.2 V8", code:"L87", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:6.0, zs:Mag, w:5800, dt:FourWD, tx:"10AT", rl:6000, y0:2021),
+  (n:"Z71 3.0 Duramax", code:"LM2", d:3.0, c:6, a:Turbo, hp:277, hpr:3750, tq:460, tqr:1500, z:7.8, w:5700, dt:FourWD, tx:"10AT", f:Diesel, y0:2021),
+ ]),
+ (make:"Chevrolet", model:"Colorado", gen:"2nd/3rd gen", y0:2015, y1:2026, trims:[
+  (n:"3.6 V6", code:"LGZ", d:3.6, c:6, a:NA, hp:308, hpr:6800, tq:275, tqr:4000, z:6.9, w:4200, dt:RWD, tx:"8AT", rl:6500, y1:2022),
+  (n:"ZR2 Bison 2.7T", code:"L3B", d:2.7, c:4, a:Turbo, hp:310, hpr:5600, tq:430, tqr:3000, z:7.0, w:5000, dt:FourWD, tx:"8AT", rl:6000, y0:2023),
+  (n:"ZR2 2.7T High Output", code:"L3B HO", d:2.7, c:4, a:Turbo, hp:310, hpr:5600, tq:430, tqr:3000, z:6.8, w:4900, dt:FourWD, tx:"8AT", rl:6000, y0:2023),
+ ]),
+ (make:"Chevrolet", model:"Bolt EV", gen:"1st gen", y0:2017, y1:2023, trims:[
+  (n:"Bolt EV", code:"EV", d:0.0, c:0, a:EV, hp:200, tq:266, z:6.5, zs:Mag, w:3563, dt:FWD, tx:"1AT", f:Electric, conf:Verified),
+ ]),
+ (make:"Chevrolet", model:"Blazer", gen:"S-10 / 2019+", y0:1995, y1:2026, trims:[
+  (n:"S-10 Blazer 4.3 V6", code:"L35", d:4.3, c:6, a:NA, hp:190, hpr:4400, tq:250, tqr:2800, z:9.8, w:3750, dt:FourWD, tx:"4AT", rl:5200, y0:1995, y1:2005),
+  (n:"2019+ 3.6 V6", code:"LGX", d:3.6, c:6, a:NA, hp:308, hpr:6600, tq:270, tqr:5000, z:6.7, w:4100, dt:AWD, tx:"9AT", rl:6500, y0:2019),
+ ]),
+ (make:"Chevrolet", model:"Suburban", gen:"GMT800", y0:2000, y1:2006, trims:[
+  (n:"5.3 V8", code:"LM4", d:5.3, c:8, a:NA, hp:285, hpr:5200, tq:325, tqr:4000, z:8.4, w:5300, dt:RWD, tx:"4AT", rl:5800),
+ ]),
+ // ---------------- GMC ----------------
+ (make:"GMC", model:"Syclone / Typhoon", gen:"1991-93", y0:1991, y1:1993, trims:[
+  (n:"Syclone 4.3 Turbo", code:"LB4 Turbo", d:4.3, c:6, a:Turbo, hp:280, hpr:4400, tq:350, tqr:3600, z:5.3, zs:Mag, w:3600, dt:AWD, tx:"4AT", rl:5000, y0:1991, y1:1991, conf:Verified),
+  (n:"Typhoon 4.3 Turbo", code:"LB4 Turbo", d:4.3, c:6, a:Turbo, hp:280, hpr:4400, tq:360, tqr:3600, z:5.3, zs:Mag, w:3800, dt:AWD, tx:"4AT", rl:5000, y0:1992, y1:1993, conf:Verified),
+ ]),
+ (make:"GMC", model:"Sierra 1500", gen:"GMT800-T1XX", y0:1999, y1:2026, trims:[
+  (n:"4.8 V8 (1999-2006)", code:"LR4", d:4.8, c:8, a:NA, hp:255, hpr:5200, tq:285, tqr:4000, z:8.9, w:4400, dt:RWD, tx:"4AT", rl:5800, y1:2006),
+  (n:"5.3 V8 (2007-13)", code:"LC9", d:5.3, c:8, a:NA, hp:315, hpr:5200, tq:338, tqr:4000, z:7.4, w:4900, dt:RWD, tx:"6AT", rl:6000, y0:2007, y1:2013, f:Flex),
+  (n:"Denali 6.2 V8 (2015-18)", code:"L86", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:5.8, zs:Mag, w:5300, dt:FourWD, tx:"8AT", rl:6000, y0:2015, y1:2018),
+  (n:"2.7 Turbo (2019+)", code:"L3B", d:2.7, c:4, a:Turbo, hp:310, hpr:5600, tq:430, tqr:3000, z:6.7, w:4500, dt:RWD, tx:"8AT", rl:6000, y0:2019),
+  (n:"Denali 6.2 V8 (2019+)", code:"L87", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:5.7, w:5400, dt:FourWD, tx:"10AT", rl:6000, y0:2019),
+  (n:"AT4X 6.2 V8", code:"L87", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:6.0, w:5800, dt:FourWD, tx:"10AT", rl:6000, y0:2022),
+ ]),
+ (make:"GMC", model:"Yukon", gen:"GMT800-T1XX", y0:2000, y1:2026, trims:[
+  (n:"5.3 V8 (2000-06)", code:"LM4", d:5.3, c:8, a:NA, hp:285, hpr:5200, tq:325, tqr:4000, z:8.2, w:5200, dt:RWD, tx:"4AT", rl:5800, y1:2006),
+  (n:"Denali 6.2 V8 (2007-14)", code:"L92", d:6.2, c:8, a:NA, hp:403, hpr:5700, tq:417, tqr:4300, z:6.5, w:5600, dt:AWD, tx:"6AT", rl:6000, y0:2007, y1:2014),
+  (n:"Denali 6.2 V8 (2021+)", code:"L87", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:6.0, w:5900, dt:FourWD, tx:"10AT", rl:6000, y0:2021),
+ ]),
+ (make:"GMC", model:"Canyon", gen:"2nd/3rd gen", y0:2015, y1:2026, trims:[
+  (n:"3.6 V6", code:"LGZ", d:3.6, c:6, a:NA, hp:308, hpr:6800, tq:275, tqr:4000, z:6.9, w:4200, dt:RWD, tx:"8AT", rl:6500, y1:2022),
+  (n:"AT4X 2.7T", code:"L3B", d:2.7, c:4, a:Turbo, hp:310, hpr:5600, tq:430, tqr:3000, z:6.9, w:5000, dt:FourWD, tx:"8AT", rl:6000, y0:2023),
+ ]),
+ (make:"GMC", model:"Hummer EV", gen:"1st gen", y0:2022, y1:2026, trims:[
+  (n:"EV Pickup 3X", code:"EV tri-motor", d:0.0, c:0, a:EV, hp:1000, tq:1200, z:3.0, zs:Mfr, w:9063, dt:FourWD, tx:"1AT", f:Electric, conf:Verified),
+  (n:"EV Pickup 2X", code:"EV dual-motor", d:0.0, c:0, a:EV, hp:625, tq:820, z:4.5, zs:Mfr, w:9000, dt:FourWD, tx:"1AT", f:Electric),
+ ]),
+ (make:"GMC", model:"Envoy XUV / Denali", gen:"GMT360", y0:2002, y1:2009, trims:[
+  (n:"4.2 I6", code:"LL8", d:4.2, c:6, a:NA, hp:275, hpr:6000, tq:275, tqr:3600, z:8.0, w:4450, dt:RWD, tx:"4AT", rl:6000, y1:2006),
+ ]),
+ // ---------------- CADILLAC ----------------
+ (make:"Cadillac", model:"CTS-V", gen:"1st gen (2004-07)", y0:2004, y1:2007, trims:[
+  (n:"CTS-V 5.7 LS6", code:"LS6", d:5.7, c:8, a:NA, hp:400, hpr:6000, tq:395, tqr:4800, z:4.6, zs:Mag, w:3850, dt:RWD, tx:"6MT", rl:6500, conf:Verified),
+  (n:"CTS-V 6.0 LS2 (2006-07)", code:"LS2", d:6.0, c:8, a:NA, hp:400, hpr:6000, tq:395, tqr:4800, z:4.6, zs:Mag, w:3850, dt:RWD, tx:"6MT", rl:6500, y0:2006),
+ ]),
+ (make:"Cadillac", model:"CTS-V", gen:"2nd/3rd gen", y0:2009, y1:2019, trims:[
+  (n:"CTS-V 6.2 LSA sedan", code:"LSA", d:6.2, c:8, a:Supercharged, hp:556, hpr:6100, tq:551, tqr:3800, z:3.9, zs:Mag, w:4200, dt:RWD, tx:"6MT/6AT", rl:6200, y0:2009, y1:2014, conf:Verified),
+  (n:"CTS-V 6.2 LT4 (3rd gen)", code:"LT4", d:6.2, c:8, a:Supercharged, hp:640, hpr:6400, tq:630, tqr:3600, z:3.7, zs:Mag, w:4145, dt:RWD, tx:"8AT", rl:6500, y0:2016, y1:2019, conf:Verified),
+ ]),
+ (make:"Cadillac", model:"ATS-V", gen:"1st gen", y0:2016, y1:2019, trims:[
+  (n:"ATS-V 3.6 twin-turbo", code:"LF4", d:3.6, c:6, a:Turbo, hp:464, hpr:5850, tq:445, tqr:3500, z:3.8, zs:Mag, w:3650, dt:RWD, tx:"6MT/8AT", rl:6500, conf:Verified),
+ ]),
+ (make:"Cadillac", model:"CT5-V Blackwing", gen:"1st gen", y0:2022, y1:2026, trims:[
+  (n:"CT5-V Blackwing 6.2 SC", code:"LT4", d:6.2, c:8, a:Supercharged, hp:668, hpr:6500, tq:659, tqr:4000, z:3.4, zs:Mag, w:4100, dt:RWD, tx:"6MT/10AT", rl:6500, conf:Verified),
+  (n:"CT5-V 3.0 twin-turbo", code:"LF4", d:3.0, c:6, a:Turbo, hp:360, hpr:5400, tq:405, tqr:3000, z:4.8, w:3900, dt:RWD, tx:"10AT", rl:6000, y0:2020),
+ ]),
+ (make:"Cadillac", model:"Escalade", gen:"GMT800-T1XX", y0:1999, y1:2026, trims:[
+  (n:"5.3 V8 (1999-2000)", code:"Vortec 5700", d:5.7, c:8, a:NA, hp:255, hpr:4600, tq:330, tqr:2800, z:9.0, w:5400, dt:AWD, tx:"4AT", rl:5000, y1:2000),
+  (n:"6.0 V8 (2002-06)", code:"Vortec 6000", d:6.0, c:8, a:NA, hp:345, hpr:5200, tq:380, tqr:4000, z:7.2, w:5600, dt:AWD, tx:"4AT", rl:5800, y0:2002, y1:2006),
+  (n:"ESV 6.2 V8 (2007-14)", code:"L92", d:6.2, c:8, a:NA, hp:403, hpr:5700, tq:417, tqr:4300, z:6.3, w:5700, dt:AWD, tx:"6AT", rl:6000, y0:2007, y1:2014),
+  (n:"6.2 V8 (2021+)", code:"L87", d:6.2, c:8, a:NA, hp:420, hpr:5600, tq:460, tqr:4100, z:6.0, w:5900, dt:FourWD, tx:"10AT", rl:6000, y0:2021),
+  (n:"Escalade-V 6.2 SC", code:"LT4", d:6.2, c:8, a:Supercharged, hp:682, hpr:6000, tq:653, tqr:4000, z:4.4, zs:Mfr, w:6100, dt:FourWD, tx:"10AT", rl:6500, y0:2023, conf:Verified),
+ ]),
+ (make:"Cadillac", model:"STS-V / XLR-V", gen:"2006-09", y0:2006, y1:2009, trims:[
+  (n:"STS-V 4.4 SC", code:"LC3", d:4.4, c:8, a:Supercharged, hp:469, hpr:6400, tq:439, tqr:3900, z:4.7, zs:Mag, w:4100, dt:RWD, tx:"6AT", rl:6500, conf:Verified),
+  (n:"XLR-V 4.4 SC", code:"LC3", d:4.4, c:8, a:Supercharged, hp:443, hpr:6400, tq:414, tqr:3900, z:4.6, zs:Mag, w:3800, dt:RWD, tx:"6AT", rl:6500, y0:2006, y1:2009),
+ ]),
+ (make:"Cadillac", model:"Seville / DeVille", gen:"1990s-2000s", y0:1992, y1:2005, trims:[
+  (n:"Seville STS 4.6 Northstar", code:"L37", d:4.6, c:8, a:NA, hp:300, hpr:6000, tq:295, tqr:4400, z:6.7, zs:Mag, w:3950, dt:FWD, tx:"4AT", rl:6500, y0:1998, y1:2004),
+  (n:"DeVille DTS 4.6 Northstar", code:"L37", d:4.6, c:8, a:NA, hp:300, hpr:6000, tq:295, tqr:4400, z:7.0, w:4000, dt:FWD, tx:"4AT", rl:6500, y0:2000, y1:2005),
+ ]),
+ (make:"Cadillac", model:"Lyriq", gen:"1st gen", y0:2023, y1:2026, trims:[
+  (n:"Lyriq AWD", code:"EV dual-motor", d:0.0, c:0, a:EV, hp:500, tq:450, z:4.9, zs:Mfr, w:5600, dt:AWD, tx:"1AT", f:Electric),
+ ]),
+ // ---------------- BUICK ----------------
+ (make:"Buick", model:"Regal", gen:"GS / T-Type", y0:1990, y1:2017, trims:[
+  (n:"GS 3.8 SC (1997-2004)", code:"L67", d:3.8, c:6, a:Supercharged, hp:240, hpr:5200, tq:280, tqr:3600, z:6.8, zs:Mag, w:3500, dt:FWD, tx:"4AT", rl:5800, y0:1997, y1:2004),
+  (n:"GS 2.0T (2012-17)", code:"LHU", d:2.0, c:4, a:Turbo, hp:259, hpr:5300, tq:295, tqr:2500, z:6.0, w:3750, dt:FWD, tx:"6MT/6AT", rl:6000, y0:2012, y1:2017),
+  (n:"GS 3.6 V6 AWD (2018+)", code:"LGX", d:3.6, c:6, a:NA, hp:310, hpr:6600, tq:282, tqr:5200, z:6.0, w:3900, dt:AWD, tx:"8AT", rl:6500, y0:2018, y1:2020),
+ ]),
+ (make:"Buick", model:"Roadmaster / LeSabre", gen:"B/H-body", y0:1990, y1:2005, trims:[
+  (n:"Roadmaster 5.7 LT1", code:"LT1", d:5.7, c:8, a:NA, hp:260, hpr:5000, tq:330, tqr:2400, z:7.5, w:4200, dt:RWD, tx:"4AT", rl:5500, y0:1994, y1:1996),
+  (n:"LeSabre 3.8", code:"3800 Series II", d:3.8, c:6, a:NA, hp:205, hpr:5200, tq:230, tqr:4000, z:8.8, w:3500, dt:FWD, tx:"4AT", rl:6000, y0:1995, y1:2005),
+ ]),
+ (make:"Buick", model:"Enclave", gen:"1st-3rd gen", y0:2008, y1:2026, trims:[
+  (n:"3.6 V6 (2008-17)", code:"LLT", d:3.6, c:6, a:NA, hp:288, hpr:6300, tq:270, tqr:3400, z:7.8, w:4700, dt:AWD, tx:"6AT", rl:6500, y1:2017),
+  (n:"2.0T (2025+)", code:"LTG", d:2.0, c:4, a:Turbo, hp:328, hpr:5000, tq:310, tqr:3000, z:6.7, w:4500, dt:AWD, tx:"8AT", rl:6000, y0:2025),
+ ]),
+ (make:"Buick", model:"Century / Lucerne", gen:"misc", y0:1997, y1:2011, trims:[
+  (n:"Lucerne CXS 4.6 Northstar", code:"LH2", d:4.6, c:8, a:NA, hp:275, hpr:5600, tq:295, tqr:4400, z:7.0, w:4000, dt:FWD, tx:"4AT", rl:6200, y0:2006, y1:2011),
+ ]),
+ // ---------------- PONTIAC ----------------
+ (make:"Pontiac", model:"Firebird / Trans Am", gen:"4th gen (1993-2002)", y0:1993, y1:2002, trims:[
+  (n:"Firebird V6 3.8", code:"L36", d:3.8, c:6, a:NA, hp:200, hpr:5200, tq:225, tqr:4000, z:7.0, w:3400, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1996),
+  (n:"Formula/Trans Am LT1", code:"LT1", d:5.7, c:8, a:NA, hp:275, hpr:5000, tq:325, tqr:2400, z:5.7, zs:Mag, w:3500, dt:RWD, tx:"6MT/4AT", rl:5800, y1:1997, conf:Verified),
+  (n:"Trans Am LS1", code:"LS1", d:5.7, c:8, a:NA, hp:305, hpr:5200, tq:335, tqr:4000, z:5.3, zs:Mag, w:3500, dt:RWD, tx:"6MT/4AT", rl:6000, y0:1998, conf:Verified),
+  (n:"Trans Am WS6 LS1", code:"LS1 WS6", d:5.7, c:8, a:NA, hp:320, hpr:5200, tq:345, tqr:4000, z:5.0, zs:Mag, w:3550, dt:RWD, tx:"6MT/4AT", rl:6000, y0:1998, conf:Verified),
+ ]),
+ (make:"Pontiac", model:"GTO", gen:"2004-06", y0:2004, y1:2006, trims:[
+  (n:"GTO 5.7 LS1", code:"LS1", d:5.7, c:8, a:NA, hp:350, hpr:5200, tq:365, tqr:4000, z:5.3, zs:Mag, w:3750, dt:RWD, tx:"6MT/4AT", rl:6000, y1:2004, conf:Verified),
+  (n:"GTO 6.0 LS2", code:"LS2", d:6.0, c:8, a:NA, hp:400, hpr:6000, tq:400, tqr:4400, z:4.7, zs:Mag, w:3780, dt:RWD, tx:"6MT/4AT", rl:6500, y0:2005, conf:Verified),
+ ]),
+ (make:"Pontiac", model:"G8", gen:"1st gen", y0:2008, y1:2009, trims:[
+  (n:"G8 GT 6.0 V8", code:"L76", d:6.0, c:8, a:NA, hp:361, hpr:5300, tq:385, tqr:4400, z:5.2, zs:Mag, w:3950, dt:RWD, tx:"6AT", rl:6000, conf:Verified),
+  (n:"G8 GXP 6.2 V8", code:"L77", d:6.2, c:8, a:NA, hp:415, hpr:5900, tq:415, tqr:4600, z:4.7, zs:Mag, w:4100, dt:RWD, tx:"6MT/6AT", rl:6200, y0:2009, conf:Verified),
+ ]),
+ (make:"Pontiac", model:"Solstice", gen:"1st gen", y0:2006, y1:2009, trims:[
+  (n:"Solstice 2.4", code:"LE5", d:2.4, c:4, a:NA, hp:177, hpr:6600, tq:166, tqr:4800, z:7.0, w:2860, dt:RWD, tx:"5MT/5AT", rl:6800),
+  (n:"Solstice GXP 2.0T", code:"LNF", d:2.0, c:4, a:Turbo, hp:260, hpr:5300, tq:260, tqr:2500, z:5.4, zs:Mag, w:3050, dt:RWD, tx:"5MT", rl:6500, y0:2007, conf:Verified),
+ ]),
+ (make:"Pontiac", model:"Grand Prix GTP", gen:"1990s-2000s", y0:1996, y1:2008, trims:[
+  (n:"GTP 3.8 SC (1997-2003)", code:"L67", d:3.8, c:6, a:Supercharged, hp:240, hpr:5200, tq:280, tqr:3600, z:6.8, zs:Mag, w:3500, dt:FWD, tx:"4AT", rl:5800, y0:1997, y1:2003),
+  (n:"GXP 5.3 V8 (2005-08)", code:"LS4", d:5.3, c:8, a:NA, hp:303, hpr:5600, tq:323, tqr:4400, z:6.0, zs:Mag, w:3800, dt:FWD, tx:"4AT", rl:6000, y0:2006, y1:2008),
+ ]),
+ (make:"Pontiac", model:"Grand Am", gen:"5th gen", y0:1999, y1:2005, trims:[
+  (n:"GT 3.4 V6", code:"LA1", d:3.4, c:6, a:NA, hp:175, hpr:5200, tq:205, tqr:4000, z:8.0, w:3200, dt:FWD, tx:"4AT", rl:6000),
+ ]),
+ (make:"Pontiac", model:"Vibe GT", gen:"1st gen", y0:2003, y1:2008, trims:[
+  (n:"GT 1.8 (2ZZ-GE)", code:"2ZZ-GE", d:1.8, c:4, a:NA, hp:180, hpr:7600, tq:130, tqr:6800, z:7.4, zs:Mag, w:2900, dt:FWD, tx:"6MT", rl:8200, y0:2003, y1:2004),
+ ]),
+ // ---------------- OLDSMOBILE ----------------
+ (make:"Oldsmobile", model:"Aurora", gen:"1st/2nd gen", y0:1995, y1:2003, trims:[
+  (n:"4.0 V8", code:"L47", d:4.0, c:8, a:NA, hp:250, hpr:5600, tq:260, tqr:4400, z:7.3, w:3950, dt:FWD, tx:"4AT", rl:6200, y0:1995, y1:1999),
+  (n:"4.0 V8 (2001-03)", code:"L47", d:4.0, c:8, a:NA, hp:250, hpr:5600, tq:260, tqr:4400, z:7.3, w:3900, dt:FWD, tx:"4AT", rl:6200, y0:2001, y1:2003),
+ ]),
+ (make:"Oldsmobile", model:"Cutlass Supreme / Intrigue", gen:"misc", y0:1990, y1:2002, trims:[
+  (n:"Cutlass Supreme 3.4 DOHC", code:"LQ1", d:3.4, c:6, a:NA, hp:215, hpr:5200, tq:220, tqr:4000, z:7.4, w:3400, dt:FWD, tx:"5MT/4AT", rl:6000, y0:1991, y1:1994),
+  (n:"Intrigue 3.8 V6", code:"L36", d:3.8, c:6, a:NA, hp:215, hpr:5200, tq:230, tqr:4000, z:8.0, w:3450, dt:FWD, tx:"4AT", rl:6000, y0:1998, y1:2002),
+ ]),
+ (make:"Oldsmobile", model:"Alero", gen:"1st gen", y0:1999, y1:2004, trims:[
+  (n:"GLS 3.4 V6", code:"L32", d:3.4, c:6, a:NA, hp:170, hpr:5200, tq:200, tqr:4000, z:8.0, w:3000, dt:FWD, tx:"4AT", rl:6000),
+ ]),
+ // ---------------- SATURN ----------------
+ (make:"Saturn", model:"Sky Red Line", gen:"1st gen", y0:2007, y1:2009, trims:[
+  (n:"Sky 2.4", code:"LE5", d:2.4, c:4, a:NA, hp:177, hpr:6600, tq:166, tqr:4800, z:7.0, w:2860, dt:RWD, tx:"5MT/5AT", rl:6800),
+  (n:"Sky Red Line 2.0T", code:"LNF", d:2.0, c:4, a:Turbo, hp:260, hpr:5300, tq:260, tqr:2500, z:5.3, zs:Mag, w:3050, dt:RWD, tx:"5MT", rl:6500, conf:Verified),
+ ]),
+ (make:"Saturn", model:"Ion Red Line", gen:"1st gen", y0:2004, y1:2007, trims:[
+  (n:"Ion Red Line 2.0 SC", code:"LSJ", d:2.0, c:4, a:Supercharged, hp:205, hpr:5600, tq:200, tqr:4400, z:6.5, zs:Mag, w:2900, dt:FWD, tx:"5MT", rl:6500, y1:2005),
+  (n:"Ion Red Line 2.0 SC (2006+)", code:"LSJ", d:2.0, c:4, a:Supercharged, hp:205, hpr:5600, tq:200, tqr:4400, z:6.5, w:2900, dt:FWD, tx:"5MT", rl:6500, y0:2006),
+ ]),
+ (make:"Saturn", model:"S-Series SC", gen:"1st/2nd gen", y0:1991, y1:2002, trims:[
+  (n:"SC2 1.9 DOHC", code:"LL0", d:1.9, c:4, a:NA, hp:124, hpr:5600, tq:122, tqr:4800, z:8.5, w:2500, dt:FWD, tx:"5MT/4AT", rl:6500, y0:1996, y1:2002),
+ ]),
+ (make:"Saturn", model:"Vue", gen:"2nd gen", y0:2008, y1:2010, trims:[
+  (n:"Vue Red Line 3.6", code:"LY7", d:3.6, c:6, a:NA, hp:257, hpr:6300, tq:248, tqr:3200, z:7.0, w:3900, dt:AWD, tx:"6AT", rl:6500),
+ ]),
+ // ---------------- HUMMER ----------------
+ (make:"Hummer", model:"H1", gen:"1st gen", y0:1992, y1:2006, trims:[
+  (n:"H1 6.5 Turbodiesel", code:"6.5 Detroit", d:6.5, c:8, a:Turbo, hp:195, hpr:3400, tq:430, tqr:1800, z:17.0, w:7100, dt:FourWD, tx:"4AT", f:Diesel, rl:3800, y0:1996, y1:2000),
+  (n:"H1 Alpha 6.6 Duramax", code:"LBZ", d:6.6, c:8, a:Turbo, hp:300, hpr:3100, tq:520, tqr:1800, z:12.0, w:7700, dt:FourWD, tx:"5AT", f:Diesel, rl:3600, y0:2006, y1:2006),
+ ]),
+ (make:"Hummer", model:"H2", gen:"1st gen", y0:2003, y1:2009, trims:[
+  (n:"H2 6.0 V8", code:"LQ4", d:6.0, c:8, a:NA, hp:316, hpr:4800, tq:360, tqr:4000, z:9.0, zs:Mag, w:6400, dt:FourWD, tx:"4AT", rl:5200, y1:2007),
+  (n:"H2 6.2 V8", code:"L92", d:6.2, c:8, a:NA, hp:393, hpr:5700, tq:416, tqr:4300, z:7.8, zs:Mag, w:6500, dt:FourWD, tx:"6AT", rl:6000, y0:2008),
+ ]),
+ (make:"Hummer", model:"H3", gen:"1st gen", y0:2006, y1:2010, trims:[
+  (n:"H3 3.5 I5", code:"LK5", d:3.5, c:5, a:NA, hp:220, hpr:5600, tq:225, tqr:2800, z:10.0, w:4700, dt:FourWD, tx:"4AT/5MT", rl:6000, y1:2008),
+  (n:"H3 5.3 V8", code:"LH6", d:5.3, c:8, a:NA, hp:300, hpr:5200, tq:320, tqr:4000, z:8.1, zs:Mag, w:4900, dt:FourWD, tx:"4AT", rl:5800, y0:2008),
+ ]),
+ // ---------------- GEO ----------------
+ (make:"Geo", model:"Metro", gen:"1st/2nd gen", y0:1990, y1:1997, trims:[
+  (n:"Metro 1.0 3-cyl", code:"G10", d:1.0, c:3, a:NA, hp:55, hpr:5700, tq:58, tqr:3300, z:14.0, w:1650, dt:FWD, tx:"5MT/3AT", rl:6500),
+  (n:"Metro XFi 1.0", code:"G10 XFi", d:1.0, c:3, a:NA, hp:55, hpr:5700, tq:58, tqr:3300, z:14.0, w:1600, dt:FWD, tx:"5MT", rl:6500, y0:1990, y1:1994),
+ ]),
+ (make:"Geo", model:"Prizm", gen:"1st/2nd gen", y0:1990, y1:1997, trims:[
+  (n:"Prizm GSi 1.6 DOHC", code:"4A-GE", d:1.6, c:4, a:NA, hp:130, hpr:6600, tq:105, tqr:5200, z:8.9, zs:Mag, w:2350, dt:FWD, tx:"5MT/3AT", rl:7500, y0:1990, y1:1992),
+  (n:"Prizm 1.8", code:"7A-FE", d:1.8, c:4, a:NA, hp:105, hpr:5200, tq:111, tqr:2800, z:10.5, w:2450, dt:FWD, tx:"5MT/4AT", rl:6200, y0:1993, y1:1997),
+ ]),
+ (make:"Geo", model:"Storm GSi", gen:"1st gen", y0:1990, y1:1993, trims:[
+  (n:"Storm GSi 1.6 DOHC", code:"4XE1", d:1.6, c:4, a:NA, hp:130, hpr:6800, tq:102, tqr:5000, z:8.3, zs:Mag, w:2350, dt:FWD, tx:"5MT", rl:7200),
+ ]),
+ (make:"Geo", model:"Tracker", gen:"1st/2nd gen", y0:1990, y1:1997, trims:[
+  (n:"Tracker 1.6", code:"G16", d:1.6, c:4, a:NA, hp:80, hpr:5400, tq:94, tqr:3000, z:13.5, w:2300, dt:FourWD, tx:"5MT/3AT", rl:6000),
+ ]),
+])

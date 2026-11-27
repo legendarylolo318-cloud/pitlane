@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Pitlane
+Comment=Car spec comparison tool
+Exec=pitlane
+Icon=pitlane
+Categories=Utility;

@@ -1,0 +1,560 @@
+import { ComboBox, Slider, LineEdit, TextEdit, ScrollView, Palette } from "std-widgets.slint";
+
+export struct SlotInfo { title: string, subtitle: string, modded: bool, color: color }
+export struct CellData { text: string, sub: string, best: bool, frac: float }
+export struct RowData { label: string, cells: [CellData] }
+export struct ChartData { title: string, bars: [CellData] }
+export struct ModRow {
+    id: string, name: string, desc: string, enabled: bool,
+    has-slider: bool, value: float, min: float, max: float, step: float,
+    slider-label: string, value-text: string, gain: string, warning: string,
+}
+export struct SavedItem { name: string, detail: string }
+
+export global Backend {
+    // ---- data in ----
+    in property <[SlotInfo]> slots;
+    in-out property <int> selected;
+    in property <[string]> years;
+    in-out property <int> year-index;
+    in property <[string]> makes;
+    in-out property <int> make-index;
+    in property <[string]> models;
+    in-out property <int> model-index;
+    in property <[string]> trims;
+    in-out property <int> trim-index;
+    in property <string> selected-title;
+    in property <string> stock-line;
+    in property <string> mod-line;
+    in property <bool> is-fav;
+    in property <[ModRow]> gain-mods;
+    in property <[ModRow]> neg-mods;
+    in property <[string]> warnings;
+    in property <[SlotInfo]> headers;
+    in property <[RowData]> rows;
+    in property <[RowData]> compact-rows;
+    in property <[ChartData]> charts;
+    in property <[string]> search-hits;
+    in property <[string]> favorites;
+    in property <[SavedItem]> saved;
+    in property <string> units-text;
+    in property <string> power-text;
+    in property <string> wheel-text;
+    in property <string> status;
+    in property <string> data-note;
+    in-out property <int> view-mode;
+    in-out property <int> dialog;
+    in-out property <string> export-text;
+    in-out property <string> overrides-text;
+    in-out property <string> save-name;
+    // edit-car form
+    in-out property <string> ed-make;
+    in-out property <string> ed-model;
+    in-out property <string> ed-trim;
+    in-out property <string> ed-year;
+    in-out property <string> ed-disp;
+    in-out property <string> ed-cyl;
+    in-out property <string> ed-hp;
+    in-out property <string> ed-tq;
+    in-out property <string> ed-zs;
+    in-out property <string> ed-weight;
+    in-out property <string> ed-rl;
+    in-out property <int> ed-asp;
+    in-out property <int> ed-dt;
+    in property <string> ed-heading;
+    in property <bool> ed-can-reset;
+    // loss settings (percent)
+    in-out property <string> loss-2wd-man;
+    in-out property <string> loss-2wd-auto;
+    in-out property <string> loss-awd-man;
+    in-out property <string> loss-awd-auto;
+    in-out property <string> loss-ev;
+
+    // ---- events out ----
+    callback select-slot(int);
+    callback add-slot();
+    callback remove-slot();
+    callback duplicate-slot();
+    callback year-picked(int);
+    callback make-picked(int);
+    callback model-picked(int);
+    callback trim-picked(int);
+    callback mod-toggled(string, bool);
+    callback mod-value(string, float);
+    callback search-edited(string);
+    callback search-pick(int);
+    callback toggle-units();
+    callback cycle-power();
+    callback toggle-wheel();
+    callback toggle-fav();
+    callback pick-fav(int);
+    callback save-comparison();
+    callback load-saved(int);
+    callback delete-saved(int);
+    callback export-png();
+    callback export-open(int);
+    callback copy-export();
+    callback open-edit(bool);
+    callback edit-save(bool);
+    callback edit-reset();
+    callback overrides-open();
+    callback overrides-copy();
+    callback overrides-import();
+    callback settings-save();
+    callback clear-status();
+}
+
+component PButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> active: false;
+    in property <color> dot: transparent;
+    in property <length> font: 14px;
+    callback clicked();
+    min-height: 44px;
+    preferred-width: lbl.preferred-width + 28px + (root.dot == transparent ? 0px : 14px);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: root.dot == transparent ? Palette.border : root.dot;
+    background: root.active ? Palette.accent-background : (ta.pressed ? Palette.border : Palette.alternate-background);
+    ta := TouchArea { clicked => { root.clicked(); } }
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 8px; spacing: 6px; alignment: center;
+        if root.dot != transparent: Rectangle { width: 8px; height: 8px; y: (parent.height - self.height) / 2; border-radius: 4px; background: root.dot; }
+        lbl := Text {
+            text: root.text; font-size: root.font; vertical-alignment: center; horizontal-alignment: center; overflow: elide;
+            color: root.active ? Palette.accent-foreground : Palette.foreground;
+        }
+    }
+}
+
+component Cell inherits Rectangle {
+    in property <CellData> d;
+    background: d.best ? #2e7d3238 : transparent;
+    border-radius: 6px;
+    VerticalLayout {
+        padding: 5px; spacing: 1px;
+        Text { text: d.text; font-weight: d.best ? 700 : 400; wrap: word-wrap; horizontal-alignment: center; font-size: 14px; color: Palette.foreground; }
+        if d.sub != "": Text { text: d.sub; font-size: 11px; wrap: word-wrap; horizontal-alignment: center; color: Palette.foreground.with-alpha(0.6); }
+    }
+}
+
+component CompareTable inherits Rectangle {
+    in property <[SlotInfo]> headers;
+    in property <[RowData]> rows;
+    in property <length> label-w: 120px;
+    property <length> col-w: max(96px, (root.width - root.label-w) / max(1, root.headers.length));
+    preferred-height: col.preferred-height;
+    col := VerticalLayout {
+        spacing: 2px;
+        alignment: start;
+        HorizontalLayout {
+            Rectangle { width: root.label-w; }
+            for h[i] in root.headers: Rectangle {
+                width: root.col-w;
+                VerticalLayout {
+                    padding: 4px; spacing: 1px;
+                    Rectangle { height: 4px; background: h.color; border-radius: 2px; }
+                    Text { text: h.title; font-weight: 700; font-size: 13px; wrap: word-wrap; horizontal-alignment: center; color: Palette.foreground; }
+                    Text { text: h.subtitle; font-size: 11px; wrap: word-wrap; horizontal-alignment: center; color: Palette.foreground.with-alpha(0.65); }
+                }
+            }
+        }
+        for row in root.rows: HorizontalLayout {
+            Rectangle {
+                width: root.label-w;
+                Text { x: 4px; width: parent.width - 8px; text: row.label; font-size: 12px; wrap: word-wrap; vertical-alignment: center; color: Palette.foreground.with-alpha(0.75); }
+            }
+            for c in row.cells: Cell { width: root.col-w; d: c; }
+        }
+    }
+}
+
+component CarCard inherits Rectangle {
+    in property <SlotInfo> info;
+    in property <[RowData]> rows;
+    in property <int> index;
+    background: Palette.alternate-background;
+    border-radius: 12px;
+    border-width: 2px;
+    border-color: root.info.color;
+    VerticalLayout {
+        padding: 12px; spacing: 3px;
+        Text { text: root.info.title; font-size: 18px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
+        Text { text: root.info.subtitle + (root.info.modded ? "  -  modded (est.)" : ""); font-size: 13px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+        for row in root.rows: HorizontalLayout {
+            spacing: 8px;
+            Text { text: row.label; width: 42%; font-size: 12px; wrap: word-wrap; vertical-alignment: center; color: Palette.foreground.with-alpha(0.7); }
+            Cell { horizontal-stretch: 1; d: row.cells[root.index]; }
+        }
+    }
+}
+
+component CardPager inherits Rectangle {
+    in property <[SlotInfo]> headers;
+    in property <[RowData]> rows;
+    in-out property <int> page: 0;
+    property <length> drag: 0px;
+    property <bool> dragging: false;
+    property <int> count: root.headers.length;
+    height: 70px + root.rows.length * 40px + 56px;
+    VerticalLayout {
+        spacing: 6px;
+        Rectangle {
+            clip: true;
+            for h[i] in root.headers: CarCard {
+                x: (i - min(root.page, root.count - 1)) * parent.width + root.drag + 4px;
+                y: 0px;
+                width: parent.width - 8px;
+                height: parent.height;
+                info: h; rows: root.rows; index: i;
+                animate x { duration: root.dragging ? 0ms : 180ms; easing: ease-out; }
+            }
+            TouchArea {
+                moved => {
+                    if (self.pressed) { root.dragging = true; root.drag = self.mouse-x - self.pressed-x; }
+                }
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) {
+                        if (root.drag < -50px && root.page < root.count - 1) { root.page += 1; }
+                        else if (root.drag > 50px && root.page > 0) { root.page -= 1; }
+                        root.drag = 0px;
+                        root.dragging = false;
+                    }
+                }
+            }
+        }
+        HorizontalLayout {
+            height: 44px; spacing: 10px; alignment: center;
+            PButton { text: "<"; width: 54px; clicked => { if (root.page > 0) { root.page -= 1; } } }
+            for h[i] in root.headers: Rectangle {
+                width: 20px;
+                Rectangle { width: 12px; height: 12px; border-radius: 6px; background: i == min(root.page, root.count - 1) ? h.color : h.color.with-alpha(0.3); }
+            }
+            PButton { text: ">"; width: 54px; clicked => { if (root.page < root.count - 1) { root.page += 1; } } }
+        }
+    }
+}
+
+component Charts inherits Rectangle {
+    in property <[ChartData]> charts;
+    in property <[SlotInfo]> headers;
+    preferred-height: v.preferred-height;
+    v := VerticalLayout {
+        spacing: 14px;
+        for ch in root.charts: VerticalLayout {
+            spacing: 4px;
+            Text { text: ch.title; font-weight: 700; font-size: 14px; color: Palette.foreground; }
+            for b[i] in ch.bars: HorizontalLayout {
+                spacing: 6px;
+                Rectangle { width: 26px; Text { text: "#" + (i + 1); font-size: 12px; vertical-alignment: center; color: root.headers[i].color; font-weight: 700; } }
+                Rectangle {
+                    horizontal-stretch: 1; height: 22px; background: Palette.alternate-background; border-radius: 4px;
+                    Rectangle { x: 0px; width: parent.width * max(0.03, b.frac); height: parent.height; border-radius: 4px; background: b.best ? #2e7d32 : root.headers[i].color.with-alpha(0.75); }
+                }
+                Rectangle { width: 120px; Text { text: b.text; font-size: 12px; horizontal-alignment: right; vertical-alignment: center; font-weight: b.best ? 700 : 400; color: Palette.foreground; } }
+            }
+        }
+    }
+}
+
+component ModItem inherits Rectangle {
+    in property <ModRow> m;
+    callback toggled(bool);
+    callback changed(float);
+    background: m.enabled ? Palette.alternate-background : transparent;
+    border-radius: 8px;
+    preferred-height: v.preferred-height;
+    TouchArea { y: 0px; height: 46px; clicked => { root.toggled(!root.m.enabled); } }
+    v := VerticalLayout {
+        padding: 6px; spacing: 4px;
+        HorizontalLayout {
+            height: 34px; spacing: 10px;
+            Rectangle {
+                width: 28px; height: 28px; y: 3px; border-radius: 6px; border-width: 2px; border-color: Palette.accent-background;
+                background: root.m.enabled ? Palette.accent-background : transparent;
+                Text { text: root.m.enabled ? "✓" : ""; color: Palette.accent-foreground; horizontal-alignment: center; vertical-alignment: center; font-weight: 700; }
+            }
+            Text { text: root.m.name; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; font-weight: 600; font-size: 14px; color: Palette.foreground; }
+        }
+        if root.m.enabled: Text { text: root.m.desc; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
+        if root.m.enabled && root.m.has-slider: HorizontalLayout {
+            spacing: 8px; height: 40px;
+            Text { text: root.m.slider-label; width: 90px; vertical-alignment: center; font-size: 12px; wrap: word-wrap; color: Palette.foreground; }
+            Slider {
+                minimum: root.m.min; maximum: root.m.max; value: root.m.value; height: 40px;
+                changed(v) => { root.changed(v); }
+            }
+            Text { text: root.m.value-text; width: 84px; vertical-alignment: center; horizontal-alignment: right; font-size: 13px; font-weight: 700; color: Palette.foreground; }
+        }
+        if root.m.enabled && root.m.gain != "": Text { text: root.m.gain; font-size: 13px; wrap: word-wrap; color: #2e9b3a; }
+        if root.m.warning != "": Text { text: root.m.warning; font-size: 12px; wrap: word-wrap; color: #d9822b; }
+    }
+}
+
+component Section inherits Text {
+    font-size: 16px; font-weight: 700; color: Palette.foreground;
+}
+
+component LabeledField inherits HorizontalLayout {
+    in property <string> label;
+    in-out property <string> value;
+    spacing: 8px;
+    Text { text: root.label; width: 110px; vertical-alignment: center; font-size: 13px; color: Palette.foreground; }
+    LineEdit { text <=> root.value; height: 40px; horizontal-stretch: 1; }
+}
+
+component BuildPanel inherits ScrollView {
+    VerticalLayout {
+        padding: 12px; spacing: 10px;
+        LineEdit {
+            placeholder-text: "Search: 06 civic si, lx570, 99 supra ...";
+            height: 44px;
+            edited(t) => { Backend.search-edited(t); }
+        }
+        for hit[i] in Backend.search-hits: PButton { text: hit; active: false; clicked => { Backend.search-pick(i); } }
+
+        Section { text: "Cars to compare (max 5)"; }
+        HorizontalLayout {
+            spacing: 6px;
+            for s[i] in Backend.slots: PButton {
+                text: "#" + (i + 1); dot: s.color; active: i == Backend.selected; width: 64px;
+                clicked => { Backend.select-slot(i); }
+            }
+            if Backend.slots.length < 5: PButton { text: "+"; width: 54px; clicked => { Backend.add-slot(); } }
+        }
+        Text { text: Backend.selected-title; font-size: 17px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
+        HorizontalLayout {
+            spacing: 6px;
+            PButton { text: "Duplicate"; clicked => { Backend.duplicate-slot(); } }
+            PButton { text: Backend.is-fav ? "★ Saved" : "☆ Favorite"; active: Backend.is-fav; clicked => { Backend.toggle-fav(); } }
+            PButton { text: "Remove"; clicked => { Backend.remove-slot(); } }
+        }
+        Text { text: "Year"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
+        ComboBox { model: Backend.years; current-index <=> Backend.year-index; height: 44px; selected => { Backend.year-picked(Backend.year-index); } }
+        Text { text: "Make"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
+        ComboBox { model: Backend.makes; current-index <=> Backend.make-index; height: 44px; selected => { Backend.make-picked(Backend.make-index); } }
+        Text { text: "Model"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
+        ComboBox { model: Backend.models; current-index <=> Backend.model-index; height: 44px; selected => { Backend.model-picked(Backend.model-index); } }
+        Text { text: "Trim / engine"; font-size: 12px; color: Palette.foreground.with-alpha(0.7); }
+        ComboBox { model: Backend.trims; current-index <=> Backend.trim-index; height: 44px; selected => { Backend.trim-picked(Backend.trim-index); } }
+
+        Rectangle {
+            background: Palette.alternate-background; border-radius: 8px;
+            VerticalLayout {
+                padding: 10px; spacing: 3px;
+                Text { text: Backend.stock-line; font-size: 13px; wrap: word-wrap; color: Palette.foreground; }
+                if Backend.mod-line != "": Text { text: Backend.mod-line; font-size: 13px; font-weight: 700; wrap: word-wrap; color: Palette.foreground; }
+            }
+        }
+
+        Section { text: "Mods (stackable, estimates)"; }
+        for m in Backend.gain-mods: ModItem {
+            m: m;
+            toggled(on) => { Backend.mod-toggled(m.id, on); }
+            changed(v) => { Backend.mod-value(m.id, v); }
+        }
+        Section { text: "Conditions & negatives"; }
+        for m in Backend.neg-mods: ModItem {
+            m: m;
+            toggled(on) => { Backend.mod-toggled(m.id, on); }
+            changed(v) => { Backend.mod-value(m.id, v); }
+        }
+        if Backend.warnings.length > 0: Section { text: "Warnings"; }
+        for w in Backend.warnings: Text { text: "⚠ " + w; font-size: 12px; wrap: word-wrap; color: #d9822b; }
+        Text { text: Backend.data-note; font-size: 11px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.55); }
+    }
+}
+
+component ComparePanel inherits ScrollView {
+    in property <bool> phone-portrait;
+    in property <bool> phone-landscape;
+    property <bool> cards: root.phone-portrait || (!root.phone-landscape && Backend.view-mode == 1);
+    property <length> min-table-w: 120px + max(1, Backend.headers.length) * 96px;
+    VerticalLayout {
+        padding: 12px; spacing: 12px;
+        Text { text: "Modded numbers are estimates (est.). Best value per row is highlighted."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
+        if root.cards: CardPager { headers: Backend.headers; rows: Backend.rows; }
+        if root.phone-portrait: Section { text: "Compact table"; }
+        if root.phone-portrait: ScrollView {
+            content-width: max(self.width, 80px + max(1, Backend.headers.length) * 96px);
+            height: 40px + Backend.compact-rows.length * 52px + 60px;
+            CompareTable { headers: Backend.headers; rows: Backend.compact-rows; label-w: 80px; }
+        }
+        if !root.cards: ScrollView {
+            content-width: max(self.width, root.min-table-w);
+            height: 70px + Backend.rows.length * 50px;
+            CompareTable { headers: Backend.headers; rows: Backend.rows; }
+        }
+        Section { text: "Charts"; }
+        Charts { charts: Backend.charts; headers: Backend.headers; }
+    }
+}
+
+component DialogFrame inherits Rectangle {
+    in property <string> title;
+    callback close();
+    background: #000000a0;
+    TouchArea { clicked => { root.close(); } }
+    Rectangle {
+        width: min(parent.width - 24px, 560px);
+        height: min(parent.height - 24px, 720px);
+        background: Palette.background; border-radius: 12px; border-width: 1px; border-color: Palette.border;
+        TouchArea { }
+        VerticalLayout {
+            padding: 12px; spacing: 8px;
+            HorizontalLayout {
+                height: 44px; spacing: 8px;
+                Text { text: root.title; font-size: 18px; font-weight: 700; vertical-alignment: center; horizontal-stretch: 1; color: Palette.foreground; }
+                PButton { text: "Close"; width: 80px; clicked => { root.close(); } }
+            }
+            if Backend.status != "": Text { text: Backend.status; font-size: 12px; wrap: word-wrap; color: #d9822b; }
+            ScrollView {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    spacing: 8px;
+                    @children
+                }
+            }
+        }
+    }
+}
+
+export component MainWindow inherits Window {
+    title: "Pitlane";
+    icon: @image-url("../assets/icon.png");
+    min-width: 320px;
+    min-height: 480px;
+    preferred-width: 1100px;
+    preferred-height: 760px;
+    background: Palette.background;
+    in-out property <int> tab: 0;
+    property <bool> phone: min(root.width, root.height) < 500px;
+    property <bool> wide: !root.phone && root.width >= 900px;
+    property <bool> phone-portrait: root.phone && root.height > root.width;
+    property <bool> phone-landscape: root.phone && root.width >= root.height;
+
+    fs := FocusScope {
+        x: 0px; y: 0px; width: root.width; height: root.height;
+        init => { self.focus(); }
+        key-pressed(e) => {
+            if (e.text == Key.Escape) {
+                if (Backend.dialog != 0) { Backend.dialog = 0; return accept; }
+                if (root.tab != 0 && !root.wide) { root.tab = 0; return accept; }
+            }
+            reject
+        }
+        VerticalLayout {
+            // header + toolbar
+            Rectangle {
+                background: Palette.alternate-background;
+                preferred-height: hv.preferred-height;
+                hv := VerticalLayout {
+                    padding: 8px; spacing: 6px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: "Pitlane"; font-size: 20px; font-weight: 800; vertical-alignment: center; color: Palette.accent-background; }
+                        Text { text: Backend.status; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; color: Palette.foreground.with-alpha(0.75); }
+                        PButton { text: "Menu"; width: 76px; clicked => { Backend.dialog = 6; } }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        PButton { text: Backend.units-text; horizontal-stretch: 1; clicked => { Backend.toggle-units(); } }
+                        PButton { text: Backend.power-text; horizontal-stretch: 1; clicked => { Backend.cycle-power(); } }
+                        PButton { text: Backend.wheel-text; horizontal-stretch: 1; clicked => { Backend.toggle-wheel(); } }
+                        if !root.phone: PButton { text: Backend.view-mode == 0 ? "Table" : "Cards"; horizontal-stretch: 1; clicked => { Backend.view-mode = 1 - Backend.view-mode; } }
+                    }
+                    if !root.wide: HorizontalLayout {
+                        spacing: 6px;
+                        PButton { text: "Build"; active: root.tab == 0; horizontal-stretch: 1; clicked => { root.tab = 0; } }
+                        PButton { text: "Compare"; active: root.tab == 1; horizontal-stretch: 1; clicked => { root.tab = 1; } }
+                    }
+                }
+            }
+            if root.wide: HorizontalLayout {
+                vertical-stretch: 1;
+                BuildPanel { width: 420px; }
+                Rectangle { width: 1px; background: Palette.border; }
+                ComparePanel { horizontal-stretch: 1; phone-portrait: false; phone-landscape: false; }
+            }
+            if !root.wide && root.tab == 0: BuildPanel { vertical-stretch: 1; }
+            if !root.wide && root.tab == 1: ComparePanel { vertical-stretch: 1; phone-portrait: root.phone-portrait; phone-landscape: root.phone-landscape; }
+        }
+    }
+
+    // ---------------- dialogs ----------------
+    if Backend.dialog == 6: DialogFrame {
+        width: root.width; height: root.height; title: "Menu"; close => { Backend.dialog = 0; }
+        PButton { text: "Favorites & saved comparisons"; clicked => { Backend.dialog = 1; } }
+        PButton { text: "Export / share this comparison"; clicked => { Backend.export-open(0); } }
+        PButton { text: "Edit this car's stats"; clicked => { Backend.open-edit(false); } }
+        PButton { text: "Add a custom car"; clicked => { Backend.open-edit(true); } }
+        PButton { text: "Import / export my overrides"; clicked => { Backend.overrides-open(); } }
+        PButton { text: "Drivetrain loss settings"; clicked => { Backend.dialog = 5; } }
+        Text { text: "Pitlane - figures are approximate; see the data accuracy notes in the README."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.65); }
+    }
+    if Backend.dialog == 1: DialogFrame {
+        width: root.width; height: root.height; title: "Favorites & saved"; close => { Backend.dialog = 0; }
+        Section { text: "Save current comparison"; }
+        HorizontalLayout {
+            spacing: 8px;
+            LineEdit { text <=> Backend.save-name; placeholder-text: "Name"; height: 44px; horizontal-stretch: 1; }
+            PButton { text: "Save"; width: 80px; clicked => { Backend.save-comparison(); } }
+        }
+        Section { text: "Saved comparisons"; }
+        for s[i] in Backend.saved: HorizontalLayout {
+            spacing: 6px;
+            PButton { text: s.name + "  -  " + s.detail; horizontal-stretch: 1; clicked => { Backend.load-saved(i); } }
+            PButton { text: "Delete"; width: 80px; clicked => { Backend.delete-saved(i); } }
+        }
+        if Backend.saved.length == 0: Text { text: "None yet."; color: Palette.foreground.with-alpha(0.6); }
+        Section { text: "Favorite cars (tap to load into the selected slot)"; }
+        for f[i] in Backend.favorites: PButton { text: f; clicked => { Backend.pick-fav(i); } }
+        if Backend.favorites.length == 0: Text { text: "None yet - use the star on the Build screen."; color: Palette.foreground.with-alpha(0.6); }
+    }
+    if Backend.dialog == 2: DialogFrame {
+        width: root.width; height: root.height; title: "Export / share"; close => { Backend.dialog = 0; }
+        HorizontalLayout {
+            spacing: 6px;
+            PButton { text: "Text"; horizontal-stretch: 1; clicked => { Backend.export-open(0); } }
+            PButton { text: "CSV"; horizontal-stretch: 1; clicked => { Backend.export-open(1); } }
+            PButton { text: "PNG"; horizontal-stretch: 1; clicked => { Backend.export-png(); } }
+        }
+        PButton { text: "Copy to clipboard"; clicked => { Backend.copy-export(); } }
+        TextEdit { text <=> Backend.export-text; read-only: true; height: 360px; font-size: 12px; }
+    }
+    if Backend.dialog == 3: DialogFrame {
+        width: root.width; height: root.height; title: Backend.ed-heading; close => { Backend.dialog = 0; }
+        LabeledField { label: "Make"; value <=> Backend.ed-make; }
+        LabeledField { label: "Model"; value <=> Backend.ed-model; }
+        LabeledField { label: "Trim"; value <=> Backend.ed-trim; }
+        LabeledField { label: "Year (1990-2026)"; value <=> Backend.ed-year; }
+        LabeledField { label: "Displacement (L)"; value <=> Backend.ed-disp; }
+        LabeledField { label: "Cylinders"; value <=> Backend.ed-cyl; }
+        HorizontalLayout { spacing: 8px; Text { text: "Aspiration"; width: 110px; vertical-alignment: center; font-size: 13px; color: Palette.foreground; } ComboBox { model: ["NA", "Turbo", "Supercharged", "Hybrid", "EV"]; current-index <=> Backend.ed-asp; height: 40px; horizontal-stretch: 1; } }
+        HorizontalLayout { spacing: 8px; Text { text: "Drivetrain"; width: 110px; vertical-alignment: center; font-size: 13px; color: Palette.foreground; } ComboBox { model: ["FWD", "RWD", "AWD", "4WD"]; current-index <=> Backend.ed-dt; height: 40px; horizontal-stretch: 1; } }
+        LabeledField { label: "Horsepower (crank)"; value <=> Backend.ed-hp; }
+        LabeledField { label: "Torque (lb-ft)"; value <=> Backend.ed-tq; }
+        LabeledField { label: "0-60 mph (s)"; value <=> Backend.ed-zs; }
+        LabeledField { label: "Curb weight (lb)"; value <=> Backend.ed-weight; }
+        LabeledField { label: "Redline (rpm, 0=?)"; value <=> Backend.ed-rl; }
+        PButton { text: "Save as override of this car"; clicked => { Backend.edit-save(false); } }
+        PButton { text: "Save as a new custom car"; clicked => { Backend.edit-save(true); } }
+        if Backend.ed-can-reset: PButton { text: "Remove my override (back to bundled data)"; clicked => { Backend.edit-reset(); } }
+    }
+    if Backend.dialog == 4: DialogFrame {
+        width: root.width; height: root.height; title: "Overrides import / export"; close => { Backend.dialog = 0; }
+        Text { text: "Your edits and custom cars (RON text). Copy it to back it up, or paste text below and tap Import."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+        HorizontalLayout { spacing: 6px; PButton { text: "Copy"; horizontal-stretch: 1; clicked => { Backend.overrides-copy(); } } PButton { text: "Import (replace)"; horizontal-stretch: 1; clicked => { Backend.overrides-import(); } } }
+        TextEdit { text <=> Backend.overrides-text; height: 380px; font-size: 12px; }
+    }
+    if Backend.dialog == 5: DialogFrame {
+        width: root.width; height: root.height; title: "Drivetrain loss (%)"; close => { Backend.dialog = 0; }
+        Text { text: "Used when 'Wheel' power is selected. Defaults: 12 / 15 / 18 / 20 / 8."; font-size: 12px; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+        LabeledField { label: "FWD/RWD manual"; value <=> Backend.loss-2wd-man; }
+        LabeledField { label: "FWD/RWD auto"; value <=> Backend.loss-2wd-auto; }
+        LabeledField { label: "AWD/4WD manual"; value <=> Backend.loss-awd-man; }
+        LabeledField { label: "AWD/4WD auto"; value <=> Backend.loss-awd-auto; }
+        LabeledField { label: "EV"; value <=> Backend.loss-ev; }
+        PButton { text: "Apply"; clicked => { Backend.settings-save(); } }
+    }
+}
