@@ -53,6 +53,7 @@
  (make:"Ford", model:"F-150", gen:"9th gen (1990-96)", y0:1990, y1:1996, trims:[
   (n:"4.9 I6", code:"4.9 I6", d:4.9, c:6, a:NA, hp:150, hpr:3400, tq:260, tqr:2000, z:10.5, w:3900, dt:RWD, tx:"5MT/4AT", rl:4800, alt:[(dt:FourWD)]),
   (n:"5.0 V8", code:"5.0 V8", d:5.0, c:8, a:NA, hp:185, hpr:3800, tq:270, tqr:2400, z:9.5, w:4150, dt:RWD, tx:"5MT/4AT", rl:4800, alt:[(dt:FourWD)]),
+  (n:"SVT Lightning 5.8", code:"5.8 Windsor HO", d:5.8, c:8, a:NA, hp:240, hpr:4200, tq:340, tqr:3200, z:7.2, zs:Mag, w:4400, dt:RWD, tx:"4AT", rl:4800, y0:1993, y1:1995),
   (n:"5.8 V8", code:"5.8 V8", d:5.8, c:8, a:NA, hp:205, hpr:3800, tq:300, tqr:2800, z:9.5, w:4600, dt:FourWD, tx:"5MT/4AT", rl:4800, alt:[(dt:RWD)]),
  ]),
  (make:"Ford", model:"F-150", gen:"10th gen (1997-2003)", y0:1997, y1:2003, trims:[
@@ -67,6 +68,9 @@
   (n:"5.4 3V V8", code:"5.4 3V", d:5.4, c:8, a:NA, hp:300, hpr:5000, tq:365, tqr:3750, z:7.6, zs:Mag, w:5100, dt:FourWD, tx:"4AT/6AT", rl:5800, alt:[(dt:RWD)]),
  ]),
  (make:"Ford", model:"F-150", gen:"12th gen (2009-14)", y0:2009, y1:2014, trims:[
+  (n:"4.6 2V V8", code:"4.6 2V", d:4.6, c:8, a:NA, hp:248, hpr:4750, tq:294, tqr:4000, z:8.6, w:4900, dt:RWD, tx:"4AT", rl:5800, y0:2009, y1:2010, alt:[(dt:FourWD)]),
+  (n:"4.6 3V V8", code:"4.6 3V", d:4.6, c:8, a:NA, hp:292, hpr:5700, tq:320, tqr:4000, z:7.8, w:5000, dt:RWD, tx:"6AT", rl:6000, y0:2009, y1:2010, alt:[(dt:FourWD)]),
+  (n:"5.4 3V V8", code:"5.4 3V", d:5.4, c:8, a:NA, hp:310, hpr:5000, tq:365, tqr:3500, z:7.4, zs:Mag, w:5200, dt:RWD, tx:"6AT", rl:5800, f:Flex, y0:2009, y1:2010, alt:[(dt:FourWD)]),
   (n:"3.7 V6", code:"3.7 Cyclone", d:3.7, c:6, a:NA, hp:302, hpr:6500, tq:278, tqr:4000, z:7.4, w:4500, dt:RWD, tx:"6AT", rl:6200, y0:2011, alt:[(dt:FourWD)]),
   (n:"5.0 V8", code:"5.0 Coyote", d:5.0, c:8, a:NA, hp:360, hpr:5500, tq:380, tqr:4250, z:6.9, zs:Mag, w:5000, dt:RWD, tx:"6AT", rl:6000, y0:2011, alt:[(dt:FourWD)]),
   (n:"EcoBoost 3.5", code:"3.5 EcoBoost", d:3.5, c:6, a:Turbo, hp:365, hpr:5000, tq:420, tqr:2500, z:6.3, zs:Mag, w:5100, dt:RWD, tx:"6AT", rl:5600, y0:2011, conf:Verified, alt:[(dt:FourWD)]),
@@ -92,6 +96,52 @@
   (n:"Raptor 3.5 EcoBoost HO", code:"3.5 EB HO", d:3.5, c:6, a:Turbo, hp:450, hpr:5000, tq:510, tqr:3500, z:5.0, zs:Mag, w:5750, dt:FourWD, tx:"10AT", rl:6000, conf:Verified),
   (n:"Raptor R 5.2 SC", code:"5.2 Predator SC", d:5.2, c:8, a:Supercharged, hp:720, hpr:6650, tq:640, tqr:4500, z:3.9, zs:Mag, w:5900, dt:FourWD, tx:"10AT", rl:7000, y0:2023, conf:Verified),
   (n:"Lightning Extended Range", code:"EV dual-motor", d:0.0, c:0, a:EV, hp:580, tq:775, z:4.3, zs:Mag, w:6600, dt:AWD, tx:"1AT", f:Electric, y0:2022, y1:2024),
+ ]),
+ (make:"Ford", model:"F-250 / F-350", gen:"F-Series HD (1990-98)", y0:1990, y1:1998, trims:[
+  (n:"F-250 light duty 5.4 V8", code:"5.4 Triton", d:5.4, c:8, a:NA, hp:235, hpr:4250, tq:330, tqr:3000, z:9.8, w:5000, dt:RWD, tx:"5MT/4AT", rl:5000, y0:1997, y1:1998, alt:[(dt:FourWD)]),
+  (n:"5.8 V8", code:"5.8 Windsor", d:5.8, c:8, a:NA, hp:210, hpr:3800, tq:315, tqr:2800, z:11.0, w:5200, dt:RWD, tx:"5MT/4AT", rl:4600, y1:1997, alt:[(dt:FourWD)]),
+  (n:"7.5 V8", code:"7.5 460", d:7.5, c:8, a:NA, hp:245, hpr:4000, tq:395, tqr:2200, z:9.8, w:5500, dt:RWD, tx:"5MT/4AT", rl:4600, y1:1997, alt:[(dt:FourWD)]),
+  (n:"7.3 IDI Diesel", code:"7.3 IDI", d:7.3, c:8, a:NA, hp:185, hpr:3000, tq:338, tqr:1400, z:14.0, w:5800, dt:RWD, tx:"5MT/4AT", rl:3300, f:Diesel, y1:1994, alt:[(dt:FourWD)]),
+  (n:"7.3 Power Stroke", code:"7.3 Power Stroke", d:7.3, c:8, a:Turbo, hp:215, hpr:3000, tq:425, tqr:2000, z:11.5, w:6000, dt:FourWD, tx:"5MT/4AT", rl:3300, f:Diesel, y0:1994, y1:1997, alt:[(dt:RWD)]),
+ ]),
+ (make:"Ford", model:"F-250 / F-350", gen:"Super Duty 1st gen (1999-2007)", y0:1999, y1:2007, trims:[
+  (n:"5.4 V8", code:"5.4 Triton", d:5.4, c:8, a:NA, hp:255, hpr:4500, tq:350, tqr:2500, z:10.5, w:5900, dt:RWD, tx:"6MT/4AT", rl:5000, alt:[(dt:FourWD)]),
+  (n:"6.8 V10", code:"6.8 Triton V10", d:6.8, c:10, a:NA, hp:310, hpr:4250, tq:425, tqr:3250, z:9.0, w:6200, dt:RWD, tx:"6MT/4AT/5AT", rl:4750, alt:[(dt:FourWD)]),
+  (n:"7.3 Power Stroke", code:"7.3 Power Stroke", d:7.3, c:8, a:Turbo, hp:275, hpr:2800, tq:525, tqr:1600, z:10.0, w:6500, dt:FourWD, tx:"6MT/4AT", rl:3300, f:Diesel, y1:2003, alt:[(dt:RWD)]),
+  (n:"6.0 Power Stroke", code:"6.0 Power Stroke", d:6.0, c:8, a:Turbo, hp:325, hpr:3300, tq:570, tqr:2000, z:8.8, zs:Mag, w:6600, dt:FourWD, tx:"6MT/5AT", rl:3800, f:Diesel, y0:2003, alt:[(dt:RWD)]),
+ ]),
+ (make:"Ford", model:"F-250 / F-350", gen:"Super Duty 2nd/3rd gen (2008-16)", y0:2008, y1:2016, trims:[
+  (n:"5.4 V8", code:"5.4 3V", d:5.4, c:8, a:NA, hp:300, hpr:5000, tq:365, tqr:3750, z:9.5, w:6000, dt:RWD, tx:"5AT", rl:5250, y1:2010, alt:[(dt:FourWD)]),
+  (n:"6.8 V10", code:"6.8 3V V10", d:6.8, c:10, a:NA, hp:362, hpr:4750, tq:457, tqr:3250, z:8.5, w:6300, dt:RWD, tx:"5AT", rl:5000, y1:2010, alt:[(dt:FourWD)]),
+  (n:"6.4 Power Stroke", code:"6.4 Power Stroke", d:6.4, c:8, a:Turbo, hp:350, hpr:3000, tq:650, tqr:2000, z:8.4, zs:Mag, w:7000, dt:FourWD, tx:"6MT/5AT", rl:3500, f:Diesel, y1:2010, alt:[(dt:RWD)]),
+  (n:"6.2 V8", code:"6.2 Boss", d:6.2, c:8, a:NA, hp:385, hpr:5500, tq:405, tqr:4500, z:8.0, w:6100, dt:RWD, tx:"6AT", rl:5750, y0:2011, alt:[(dt:FourWD)]),
+  (n:"6.7 Power Stroke", code:"6.7 Power Stroke", d:6.7, c:8, a:Turbo, hp:400, hpr:2800, tq:800, tqr:1600, z:7.6, zs:Mag, w:7200, dt:FourWD, tx:"6AT", rl:3600, f:Diesel, y0:2011, y1:2014, alt:[(dt:RWD)]),
+  (n:"6.7 Power Stroke (2015-16)", code:"6.7 Power Stroke", d:6.7, c:8, a:Turbo, hp:440, hpr:2800, tq:860, tqr:1600, z:7.3, w:7200, dt:FourWD, tx:"6AT", rl:3600, f:Diesel, y0:2015, alt:[(dt:RWD)]),
+ ]),
+ (make:"Ford", model:"F-250 / F-350", gen:"Super Duty 4th gen (2017-22)", y0:2017, y1:2022, trims:[
+  (n:"6.2 V8", code:"6.2 Boss", d:6.2, c:8, a:NA, hp:385, hpr:5750, tq:430, tqr:3800, z:7.9, w:6200, dt:RWD, tx:"6AT/10AT", rl:5800, alt:[(dt:FourWD)]),
+  (n:"7.3 V8 Godzilla", code:"7.3 Godzilla", d:7.3, c:8, a:NA, hp:430, hpr:5500, tq:475, tqr:4000, z:6.9, zs:Mag, w:6500, dt:FourWD, tx:"10AT", rl:5800, y0:2020, alt:[(dt:RWD)]),
+  (n:"6.7 Power Stroke", code:"6.7 Power Stroke", d:6.7, c:8, a:Turbo, hp:450, hpr:2800, tq:935, tqr:1800, z:7.0, zs:Mag, w:7400, dt:FourWD, tx:"6AT", rl:3600, f:Diesel, y1:2019, alt:[(dt:RWD)]),
+  (n:"6.7 Power Stroke (2020-22)", code:"6.7 Power Stroke", d:6.7, c:8, a:Turbo, hp:475, hpr:2600, tq:1050, tqr:1600, z:6.5, zs:Mag, w:7500, dt:FourWD, tx:"10AT", rl:3600, f:Diesel, y0:2020, conf:Verified, alt:[(dt:RWD)]),
+ ]),
+ (make:"Ford", model:"F-250 / F-350", gen:"Super Duty 5th gen (2023-)", y0:2023, y1:2026, trims:[
+  (n:"6.8 V8", code:"6.8 V8", d:6.8, c:8, a:NA, hp:405, hpr:5250, tq:445, tqr:3900, z:7.4, w:6300, dt:RWD, tx:"10AT", rl:5800, alt:[(dt:FourWD)]),
+  (n:"7.3 V8", code:"7.3 Godzilla", d:7.3, c:8, a:NA, hp:430, hpr:5500, tq:485, tqr:4000, z:6.9, w:6600, dt:FourWD, tx:"10AT", rl:5800, alt:[(dt:RWD)]),
+  (n:"6.7 Power Stroke", code:"6.7 Power Stroke", d:6.7, c:8, a:Turbo, hp:475, hpr:2600, tq:1050, tqr:1600, z:6.6, w:7600, dt:FourWD, tx:"10AT", rl:3600, f:Diesel, alt:[(dt:RWD)]),
+  (n:"6.7 Power Stroke High Output", code:"6.7 Power Stroke HO", d:6.7, c:8, a:Turbo, hp:500, hpr:2800, tq:1200, tqr:1600, z:6.2, zs:Mag, w:7700, dt:FourWD, tx:"10AT", rl:3600, f:Diesel, conf:Verified, alt:[(dt:RWD)]),
+ ]),
+ (make:"Ford", model:"Maverick", gen:"1st gen (2022-)", y0:2022, y1:2026, trims:[
+  (n:"2.5 Hybrid", code:"2.5 Duratec + e-motor", d:2.5, c:4, a:Hybrid, hp:191, hpr:6000, tq:155, tqr:4000, z:7.7, zs:Mag, w:3700, dt:FWD, tx:"CVT", rl:6500, f:Hybrid, alt:[(dt:AWD, y0:2025)]),
+  (n:"2.0 EcoBoost", code:"2.0 EcoBoost", d:2.0, c:4, a:Turbo, hp:250, hpr:5500, tq:277, tqr:3000, z:6.6, zs:Mag, w:3700, dt:FWD, tx:"8AT", rl:6500, conf:Verified, alt:[(dt:AWD)]),
+  (n:"Tremor 2.0 EcoBoost", code:"2.0 EcoBoost", d:2.0, c:4, a:Turbo, hp:250, hpr:5500, tq:277, tqr:3000, z:7.0, w:3900, dt:AWD, tx:"8AT", rl:6500, y0:2023),
+ ]),
+ (make:"Ford", model:"Explorer Sport Trac", gen:"1st/2nd gen", y0:2001, y1:2010, trims:[
+  (n:"4.0 V6", code:"4.0 SOHC", d:4.0, c:6, a:NA, hp:210, hpr:5250, tq:240, tqr:3250, z:8.9, w:4200, dt:RWD, tx:"5MT/5AT", rl:6000, y1:2005, alt:[(dt:FourWD)]),
+  (n:"4.0 V6 (2007-10)", code:"4.0 SOHC", d:4.0, c:6, a:NA, hp:210, hpr:5100, tq:254, tqr:3700, z:8.8, w:4400, dt:RWD, tx:"5AT", rl:6000, y0:2007, alt:[(dt:FourWD)]),
+  (n:"4.6 V8", code:"4.6 3V", d:4.6, c:8, a:NA, hp:292, hpr:5750, tq:300, tqr:3950, z:7.2, zs:Mag, w:4600, dt:RWD, tx:"6AT", rl:6000, y0:2007, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Lincoln", model:"Blackwood", gen:"1st gen", y0:2002, y1:2002, trims:[
+  (n:"5.4 DOHC V8", code:"5.4 InTech", d:5.4, c:8, a:NA, hp:300, hpr:5000, tq:355, tqr:2750, z:8.2, w:5600, dt:RWD, tx:"4AT", rl:5800),
  ]),
  (make:"Ford", model:"Focus", gen:"SVT / ST / RS", y0:2002, y1:2018, trims:[
   (n:"SVT Focus 2.0", code:"2.0 Zetec", d:2.0, c:4, a:NA, hp:170, hpr:6800, tq:145, tqr:4800, z:7.0, w:2750, dt:FWD, tx:"6MT", rl:7200, y0:2002, y1:2004),

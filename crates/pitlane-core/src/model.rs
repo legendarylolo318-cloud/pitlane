@@ -420,7 +420,7 @@ pub fn validate_car(c: &Car) -> Result<(), String> {
     } else if !(0.6..=9.0).contains(&c.displacement_l) || !(2..=12).contains(&c.cylinders) {
         return Err(format!("{id}: displacement/cylinders out of range"));
     }
-    if c.redline_rpm != 0 && !(3000..=11_000).contains(&c.redline_rpm) {
+    if c.redline_rpm != 0 && !(2500..=11_000).contains(&c.redline_rpm) {
         return Err(format!("{id}: redline out of range"));
     }
     Ok(())

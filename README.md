@@ -10,6 +10,11 @@ Compare up to 5 cars (US market, 1990-2026), stack mods, and see estimated modde
 </p>
 
 ## Features
+* **Every US-market pickup since 1990** from American and Japanese makes: Ford (F-150, Super Duty, Ranger, Maverick,
+  Sport Trac), Chevrolet/GMC (Silverado/Sierra 1500-3500, S-10/Sonoma, Colorado/Canyon, Avalanche, SSR), Dodge/Ram
+  (Ram 1500-3500, Dakota), Jeep (Comanche, Gladiator), Cadillac Escalade EXT, Hummer, Lincoln Blackwood/Mark LT,
+  Toyota (Pickup, T100, Tacoma, Tundra), Honda Ridgeline, Subaru Baja, Nissan (Hardbody, Frontier, Titan), Mazda
+  B-Series, Mitsubishi (Mighty Max, Raider) and Isuzu (Pickup, Hombre, i-Series). A test checks every model year.
 * **Drivetrain per trim**: trims sold with more than one drivetrain (2WD / 4WD trucks, optional AWD on sedans and
   crossovers) get a drivetrain switch under the engine picker, with their own weight and 0-60. Search understands
   "awd", "4wd", "4x4" and "2wd".

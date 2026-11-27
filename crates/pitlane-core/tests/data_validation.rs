@@ -194,3 +194,71 @@ fn coverage_report() {
     }
     println!("total {total}");
 }
+
+/// Every US-market pickup from American and Japanese makes since 1990, with the years it was sold.
+#[test]
+fn all_american_and_japanese_trucks() {
+    let db = Db::bundled();
+    type Truck = (&'static str, &'static str, &'static [(u16, u16)]);
+    let trucks: &[Truck] = &[
+        ("Ford", "F-150", &[(1990, 2026)]),
+        ("Ford", "F-250 / F-350", &[(1990, 2026)]),
+        ("Ford", "Ranger", &[(1990, 2011), (2019, 2026)]),
+        ("Ford", "Maverick", &[(2022, 2026)]),
+        ("Ford", "Explorer Sport Trac", &[(2001, 2005), (2007, 2010)]),
+        ("Lincoln", "Blackwood", &[(2002, 2002)]),
+        ("Lincoln", "Mark LT", &[(2006, 2008)]),
+        ("Chevrolet", "Silverado 1500", &[(1990, 2026)]),
+        ("Chevrolet", "Silverado 2500 HD", &[(1990, 2026)]),
+        ("Chevrolet", "Silverado 3500 HD", &[(1990, 2026)]),
+        ("Chevrolet", "S-10", &[(1990, 2004)]),
+        ("Chevrolet", "Colorado", &[(2004, 2012), (2015, 2026)]),
+        ("Chevrolet", "Avalanche", &[(2002, 2013)]),
+        ("Chevrolet", "SSR", &[(2003, 2006)]),
+        ("GMC", "Sierra 1500", &[(1990, 2026)]),
+        ("GMC", "Sierra 2500 HD", &[(1990, 2026)]),
+        ("GMC", "Sierra 3500 HD", &[(1990, 2026)]),
+        ("GMC", "Sonoma", &[(1991, 2004)]),
+        ("GMC", "Canyon", &[(2004, 2012), (2015, 2026)]),
+        ("GMC", "Syclone / Typhoon", &[(1991, 1991)]),
+        ("GMC", "Hummer EV", &[(2022, 2026)]),
+        ("Cadillac", "Escalade EXT", &[(2002, 2013)]),
+        ("Hummer", "H1", &[(1992, 2004)]),
+        ("Hummer", "H2 SUT", &[(2005, 2009)]),
+        ("Hummer", "H3T", &[(2009, 2010)]),
+        ("Dodge", "Dakota", &[(1990, 2011)]),
+        ("Dodge", "Ram 1500 / SRT-10", &[(1990, 2010)]),
+        ("Dodge", "Ram 2500 / 3500", &[(1990, 2010)]),
+        ("Ram", "1500", &[(2011, 2026)]),
+        ("Ram", "2500 Heavy Duty", &[(2011, 2026)]),
+        ("Ram", "3500 Heavy Duty", &[(2011, 2026)]),
+        ("Jeep", "Comanche", &[(1990, 1992)]),
+        ("Jeep", "Gladiator", &[(2020, 2026)]),
+        ("Toyota", "Pickup", &[(1990, 1995)]),
+        ("Toyota", "T100", &[(1993, 1998)]),
+        ("Toyota", "Tacoma", &[(1995, 2026)]),
+        ("Toyota", "Tundra", &[(2000, 2026)]),
+        ("Honda", "Ridgeline", &[(2006, 2014), (2017, 2026)]),
+        ("Subaru", "Baja", &[(2003, 2006)]),
+        ("Nissan", "Hardbody", &[(1990, 1997)]),
+        ("Nissan", "Frontier", &[(1998, 2026)]),
+        ("Nissan", "Titan", &[(2004, 2024)]),
+        ("Mazda", "B-Series", &[(1990, 2009)]),
+        ("Mitsubishi", "Mighty Max", &[(1990, 1996)]),
+        ("Mitsubishi", "Raider", &[(2006, 2009)]),
+        ("Isuzu", "Pickup", &[(1990, 1995)]),
+        ("Isuzu", "Hombre", &[(1996, 2000)]),
+        ("Isuzu", "i-Series", &[(2006, 2008)]),
+    ];
+    let mut missing = Vec::new();
+    for (make, model, spans) in trucks {
+        for &(a, b) in *spans {
+            for y in a..=b {
+                if db.trims_for(y, make, model).is_empty() {
+                    missing.push(format!("{y} {make} {model}"));
+                }
+            }
+        }
+    }
+    assert!(missing.is_empty(), "missing trucks:\n{}", missing.join("\n"));
+}

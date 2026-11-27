@@ -1,0 +1,18 @@
+#![enable(implicit_some)]
+(group:"Isuzu", gens:[
+ (make:"Isuzu", model:"Pickup", gen:"TF (1988-95)", y0:1990, y1:1995, trims:[
+  (n:"2.3 I4", code:"4ZD1", d:2.3, c:4, a:NA, hp:96, hpr:4600, tq:123, tqr:2600, z:14.5, w:2800, dt:RWD, tx:"5MT/4AT", rl:5200),
+  (n:"2.6 I4", code:"4ZE1", d:2.6, c:4, a:NA, hp:120, hpr:4600, tq:150, tqr:2600, z:12.0, w:3000, dt:RWD, tx:"5MT/4AT", rl:5200, alt:[(dt:FourWD)]),
+  (n:"3.1 V6", code:"LG6", d:3.1, c:6, a:NA, hp:120, hpr:4400, tq:165, tqr:2800, z:11.5, w:3300, dt:RWD, tx:"5MT/4AT", rl:5000, y0:1991, y1:1994, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Isuzu", model:"Hombre", gen:"1st gen", y0:1996, y1:2000, trims:[
+  (n:"2.2 I4", code:"LN2", d:2.2, c:4, a:NA, hp:118, hpr:5200, tq:130, tqr:2800, z:12.0, w:3000, dt:RWD, tx:"5MT/4AT", rl:5200),
+  (n:"4.3 V6", code:"L35 Vortec", d:4.3, c:6, a:NA, hp:175, hpr:4400, tq:240, tqr:2800, z:9.0, w:3500, dt:RWD, tx:"5MT/4AT", rl:5000, y0:1997, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Isuzu", model:"i-Series", gen:"1st gen", y0:2006, y1:2008, trims:[
+  (n:"i-280 2.8 I4", code:"LK5", d:2.8, c:4, a:NA, hp:175, hpr:5600, tq:185, tqr:2800, z:9.5, w:3500, dt:RWD, tx:"5MT/4AT", rl:6000, y1:2006, alt:[(dt:FourWD)]),
+  (n:"i-290 2.9 I4", code:"LLV", d:2.9, c:4, a:NA, hp:185, hpr:5600, tq:190, tqr:2800, z:9.3, w:3550, dt:RWD, tx:"5MT/4AT", rl:6000, y0:2007, alt:[(dt:FourWD)]),
+  (n:"i-350 3.5 I5", code:"LL8", d:3.5, c:5, a:NA, hp:220, hpr:5600, tq:225, tqr:2800, z:8.5, w:3800, dt:RWD, tx:"4AT", rl:6000, y1:2006, alt:[(dt:FourWD)]),
+  (n:"i-370 3.7 I5", code:"LLR", d:3.7, c:5, a:NA, hp:242, hpr:5600, tq:242, tqr:4600, z:8.2, w:3850, dt:RWD, tx:"5MT/4AT", rl:6000, y0:2007, alt:[(dt:FourWD)]),
+ ]),
+])

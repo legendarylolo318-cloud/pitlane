@@ -1,0 +1,31 @@
+#![enable(implicit_some)]
+(group:"Nissan", gens:[
+ (make:"Nissan", model:"Hardbody", gen:"D21 (1986-97)", y0:1990, y1:1997, trims:[
+  (n:"2.4 I4", code:"KA24E", d:2.4, c:4, a:NA, hp:134, hpr:5200, tq:154, tqr:3600, z:11.5, w:2900, dt:RWD, tx:"5MT/4AT", rl:5800, alt:[(dt:FourWD)]),
+  (n:"3.0 V6", code:"VG30E", d:3.0, c:6, a:NA, hp:153, hpr:4800, tq:180, tqr:4000, z:10.0, w:3300, dt:RWD, tx:"5MT/4AT", rl:5800, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Nissan", model:"Frontier", gen:"D22 (1998-2004)", y0:1998, y1:2004, trims:[
+  (n:"2.4 I4", code:"KA24DE", d:2.4, c:4, a:NA, hp:143, hpr:5200, tq:154, tqr:4000, z:11.0, w:3200, dt:RWD, tx:"5MT/4AT", rl:6000, alt:[(dt:FourWD)]),
+  (n:"3.3 V6", code:"VG33E", d:3.3, c:6, a:NA, hp:170, hpr:4800, tq:200, tqr:2800, z:9.8, w:3600, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1999, alt:[(dt:FourWD)]),
+  (n:"3.3 V6 Supercharged", code:"VG33ER", d:3.3, c:6, a:Supercharged, hp:210, hpr:4800, tq:246, tqr:2800, z:8.4, zs:Mag, w:3800, dt:RWD, tx:"6MT/4AT", rl:5500, y0:2001, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Nissan", model:"Frontier", gen:"D40 (2005-21)", y0:2005, y1:2021, trims:[
+  (n:"2.5 I4", code:"QR25DE", d:2.5, c:4, a:NA, hp:152, hpr:5200, tq:171, tqr:4400, z:10.0, w:3700, dt:RWD, tx:"5MT/5AT", rl:6200),
+  (n:"4.0 V6", code:"VQ40DE", d:4.0, c:6, a:NA, hp:261, hpr:5600, tq:281, tqr:4000, z:7.3, zs:Mag, w:4300, dt:RWD, tx:"6MT/5AT", rl:6600, y1:2019, alt:[(dt:FourWD)]),
+  (n:"Nismo / PRO-4X 4.0 V6", code:"VQ40DE", d:4.0, c:6, a:NA, hp:261, hpr:5600, tq:281, tqr:4000, z:7.6, w:4600, dt:FourWD, tx:"6MT/5AT", rl:6600, y1:2019),
+  (n:"3.8 V6", code:"VQ38DD", d:3.8, c:6, a:NA, hp:310, hpr:6400, tq:281, tqr:4400, z:6.6, w:4400, dt:RWD, tx:"9AT", rl:6800, y0:2020, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Nissan", model:"Frontier", gen:"D41 (2022-)", y0:2022, y1:2026, trims:[
+  (n:"3.8 V6", code:"VQ38DD", d:3.8, c:6, a:NA, hp:310, hpr:6400, tq:281, tqr:4400, z:6.6, zs:Mag, w:4500, dt:RWD, tx:"9AT", rl:6800, conf:Verified, alt:[(dt:FourWD)]),
+  (n:"PRO-4X 3.8 V6", code:"VQ38DD", d:3.8, c:6, a:NA, hp:310, hpr:6400, tq:281, tqr:4400, z:7.0, w:4700, dt:FourWD, tx:"9AT", rl:6800),
+ ]),
+ (make:"Nissan", model:"Titan", gen:"1st gen (2004-15)", y0:2004, y1:2015, trims:[
+  (n:"5.6 V8", code:"VK56DE", d:5.6, c:8, a:NA, hp:305, hpr:4900, tq:379, tqr:3600, z:7.0, zs:Mag, w:5100, dt:RWD, tx:"5AT", rl:6000, y1:2006, alt:[(dt:FourWD)]),
+  (n:"5.6 V8 (2007-15)", code:"VK56DE", d:5.6, c:8, a:NA, hp:317, hpr:5200, tq:385, tqr:3400, z:6.9, w:5200, dt:RWD, tx:"5AT", rl:6000, y0:2007, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Nissan", model:"Titan", gen:"2nd gen (2016-24)", y0:2016, y1:2024, trims:[
+  (n:"5.6 V8", code:"VK56VD", d:5.6, c:8, a:NA, hp:390, hpr:5800, tq:394, tqr:4000, z:6.4, zs:Mag, w:5600, dt:RWD, tx:"7AT/9AT", rl:6000, conf:Verified, alt:[(dt:FourWD)]),
+  (n:"XD 5.0 Cummins Diesel", code:"ISV5.0", d:5.0, c:8, a:Turbo, hp:310, hpr:3200, tq:555, tqr:1600, z:8.5, w:7100, dt:FourWD, tx:"6AT", rl:3600, f:Diesel, y1:2019, alt:[(dt:RWD)]),
+  (n:"XD 5.6 V8", code:"VK56VD", d:5.6, c:8, a:NA, hp:390, hpr:5800, tq:394, tqr:4000, z:7.0, w:6300, dt:FourWD, tx:"7AT/9AT", rl:6000, alt:[(dt:RWD)]),
+ ]),
+])

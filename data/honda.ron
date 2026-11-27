@@ -84,11 +84,18 @@
   (n:"3.5 V6 (4th gen)", code:"J35Z", d:3.5, c:6, a:NA, hp:248, hpr:5700, tq:250, tqr:4800, z:7.8, w:4300, dt:FWD, tx:"5AT/6AT", rl:6200, y0:2011, y1:2017),
   (n:"3.5 V6 (5th gen)", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:7.0, zs:Mag, w:4500, dt:FWD, tx:"9AT/10AT", rl:6200, y0:2018),
  ]),
- (make:"Honda", model:"Pilot / Passport / Ridgeline", gen:"misc", y0:2003, y1:2026, trims:[
+ (make:"Honda", model:"Pilot / Passport", gen:"misc", y0:2003, y1:2026, trims:[
   (n:"Pilot 3.5 V6 (2003-08)", code:"J35A", d:3.5, c:6, a:NA, hp:240, hpr:5750, tq:242, tqr:4500, z:8.2, w:4300, dt:AWD, tx:"5AT", rl:6000, y0:2003, y1:2008, alt:[(dt:FWD, y0:2006)]),
   (n:"Pilot 3.5 V6 (2016+)", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:6.9, w:4300, dt:AWD, tx:"9AT", rl:6200, y0:2016, alt:[(dt:FWD)]),
-  (n:"Ridgeline 3.5 V6", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:6.9, zs:Mag, w:4400, dt:AWD, tx:"6AT/9AT", rl:6200, y0:2017, alt:[(dt:FWD)]),
   (n:"Passport TrailSport 3.5 V6", code:"J35Y", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:7.1, w:4300, dt:AWD, tx:"9AT", rl:6200, y0:2019),
+ ]),
+ (make:"Honda", model:"Ridgeline", gen:"1st gen (2006-14)", y0:2006, y1:2014, trims:[
+  (n:"3.5 V6", code:"J35A9", d:3.5, c:6, a:NA, hp:247, hpr:5750, tq:245, tqr:4500, z:8.0, zs:Mag, w:4500, dt:AWD, tx:"5AT", rl:6300, y1:2008),
+  (n:"3.5 V6 (2009-14)", code:"J35Z5", d:3.5, c:6, a:NA, hp:250, hpr:5700, tq:247, tqr:4300, z:7.9, w:4500, dt:AWD, tx:"5AT", rl:6300, y0:2009),
+ ]),
+ (make:"Honda", model:"Ridgeline", gen:"2nd gen (2017-)", y0:2017, y1:2026, trims:[
+  (n:"3.5 V6", code:"J35Y6", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:6.9, zs:Mag, w:4400, dt:AWD, tx:"6AT/9AT", rl:6800, conf:Verified, alt:[(dt:FWD, y1:2020)]),
+  (n:"TrailSport 3.5 V6", code:"J35Y6", d:3.5, c:6, a:NA, hp:280, hpr:6000, tq:262, tqr:4700, z:7.1, w:4500, dt:AWD, tx:"9AT", rl:6800, y0:2024),
  ]),
  (make:"Honda", model:"Insight", gen:"1st gen", y0:2000, y1:2006, trims:[
   (n:"1.0 IMA", code:"ECA1", d:1.0, c:3, a:Hybrid, hp:73, hpr:5700, tq:91, tqr:1500, z:11.0, w:1850, dt:FWD, tx:"5MT/CVT", f:Hybrid, rl:6500),

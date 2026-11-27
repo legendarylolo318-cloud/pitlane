@@ -7,6 +7,7 @@ two compact blobs into `OUT_DIR` (`cars.bin`, an interned fixed-record table, an
 | File | Contents |
 |------|----------|
 | `ford.ron`, `gm.ron`, `stellantis.ron`, `honda.ron`, `toyota.ron`, `subaru.ron` | one file per parent group |
+| `nissan.ron`, `mazda.ron`, `mitsubishi.ron`, `isuzu.ron` | US-market pickups of these makes |
 | `mods.ron` | mod definitions (see below) |
 
 ## Run-time loading

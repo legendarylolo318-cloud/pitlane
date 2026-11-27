@@ -45,8 +45,19 @@
   (n:"Turbo 2.0 (SW20)", code:"3S-GTE", d:2.0, c:4, a:Turbo, hp:200, hpr:6000, tq:200, tqr:3200, z:5.6, zs:Mag, w:2900, dt:RWD, tx:"5MT", rl:7200, y0:1991, y1:1995, conf:Verified),
   (n:"Spyder 1.8 (W30)", code:"1ZZ-FE", d:1.8, c:4, a:NA, hp:138, hpr:6400, tq:125, tqr:4400, z:6.8, zs:Mag, w:2195, dt:RWD, tx:"5MT/6SMT", rl:7200, y0:2000, y1:2005, conf:Verified),
  ]),
+ (make:"Toyota", model:"Pickup", gen:"4th/5th gen (1989-95)", y0:1990, y1:1995, trims:[
+  (n:"2.4 I4", code:"22R-E", d:2.4, c:4, a:NA, hp:116, hpr:4800, tq:140, tqr:2800, z:12.5, w:2800, dt:RWD, tx:"5MT/4AT", rl:5200, alt:[(dt:FourWD)]),
+  (n:"3.0 V6", code:"3VZ-E", d:3.0, c:6, a:NA, hp:150, hpr:4800, tq:180, tqr:3400, z:10.5, w:3300, dt:RWD, tx:"5MT/4AT", rl:5500, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Toyota", model:"T100", gen:"1st gen", y0:1993, y1:1998, trims:[
+  (n:"3.0 V6", code:"3VZ-E", d:3.0, c:6, a:NA, hp:150, hpr:4800, tq:180, tqr:3400, z:11.0, w:3700, dt:RWD, tx:"5MT/4AT", rl:5500, y1:1994, alt:[(dt:FourWD)]),
+  (n:"2.7 I4", code:"3RZ-FE", d:2.7, c:4, a:NA, hp:150, hpr:4800, tq:177, tqr:4000, z:11.5, w:3600, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1995, alt:[(dt:FourWD)]),
+  (n:"3.4 V6", code:"5VZ-FE", d:3.4, c:6, a:NA, hp:190, hpr:4800, tq:220, tqr:3600, z:9.5, w:3900, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1995, alt:[(dt:FourWD)]),
+ ]),
  (make:"Toyota", model:"Tacoma", gen:"1st-4th gen", y0:1995, y1:2026, trims:[
   (n:"2.4 (1st gen)", code:"2RZ-FE", d:2.4, c:4, a:NA, hp:142, hpr:5000, tq:160, tqr:4000, z:11.0, w:3000, dt:RWD, tx:"5MT/4AT", rl:5500, y0:1995, y1:2004, alt:[(dt:FourWD)]),
+  (n:"2.7 I4 (1st gen)", code:"3RZ-FE", d:2.7, c:4, a:NA, hp:150, hpr:4800, tq:177, tqr:4000, z:10.5, w:3400, dt:FourWD, tx:"5MT/4AT", rl:5500, y0:1995, y1:2004, alt:[(dt:RWD)]),
+  (n:"2.7 I4 (2nd/3rd gen)", code:"2TR-FE", d:2.7, c:4, a:NA, hp:159, hpr:5200, tq:180, tqr:3800, z:10.0, w:3600, dt:RWD, tx:"5MT/4AT/6AT", rl:5600, y0:2005, y1:2023, alt:[(dt:FourWD)]),
   (n:"3.4 V6 (1st gen)", code:"5VZ-FE", d:3.4, c:6, a:NA, hp:190, hpr:4800, tq:220, tqr:3600, z:8.5, w:3600, dt:FourWD, tx:"5MT/4AT", rl:5500, y0:1995, y1:2004, alt:[(dt:RWD)]),
   (n:"X-Runner 4.0 V6", code:"1GR-FE", d:4.0, c:6, a:NA, hp:236, hpr:5200, tq:266, tqr:4000, z:6.7, zs:Mag, w:3800, dt:RWD, tx:"6MT", rl:5800, y0:2005, y1:2015, conf:Verified),
   (n:"4.0 V6 (2nd gen)", code:"1GR-FE", d:4.0, c:6, a:NA, hp:236, hpr:5200, tq:266, tqr:4000, z:7.4, w:4100, dt:FourWD, tx:"6MT/5AT", rl:5800, y0:2005, y1:2015, alt:[(dt:RWD)]),
@@ -56,6 +67,11 @@
  ]),
  (make:"Toyota", model:"Tundra", gen:"1st-3rd gen", y0:2000, y1:2026, trims:[
   (n:"4.7 V8 (1st gen)", code:"2UZ-FE", d:4.7, c:8, a:NA, hp:240, hpr:4800, tq:315, tqr:3400, z:8.5, w:4400, dt:RWD, tx:"5MT/4AT", rl:5600, y0:2000, y1:2006, alt:[(dt:FourWD)]),
+  (n:"3.4 V6 (1st gen)", code:"5VZ-FE", d:3.4, c:6, a:NA, hp:190, hpr:4800, tq:220, tqr:3600, z:10.0, w:4200, dt:RWD, tx:"5MT/4AT", rl:5500, y0:2000, y1:2004, alt:[(dt:FourWD)]),
+  (n:"4.0 V6", code:"1GR-FE", d:4.0, c:6, a:NA, hp:236, hpr:5200, tq:266, tqr:4000, z:8.5, w:4300, dt:RWD, tx:"5MT/5AT", rl:5800, y0:2005, y1:2006, alt:[(dt:FourWD)]),
+  (n:"4.0 V6 (2nd gen)", code:"1GR-FE", d:4.0, c:6, a:NA, hp:270, hpr:5600, tq:278, tqr:4400, z:8.2, w:4700, dt:RWD, tx:"5AT", rl:6000, y0:2007, y1:2014, alt:[(dt:FourWD)]),
+  (n:"4.7 V8 (2nd gen)", code:"2UZ-FE", d:4.7, c:8, a:NA, hp:276, hpr:5400, tq:313, tqr:3400, z:7.6, w:5000, dt:RWD, tx:"5AT", rl:5600, y0:2007, y1:2009, alt:[(dt:FourWD)]),
+  (n:"4.6 V8", code:"1UR-FE", d:4.6, c:8, a:NA, hp:310, hpr:5600, tq:327, tqr:3400, z:7.1, w:5100, dt:RWD, tx:"6AT", rl:6000, y0:2010, y1:2019, alt:[(dt:FourWD)]),
   (n:"5.7 V8 (2nd gen)", code:"3UR-FE", d:5.7, c:8, a:NA, hp:381, hpr:5600, tq:401, tqr:3600, z:6.3, zs:Mag, w:5600, dt:FourWD, tx:"6AT", rl:6000, y0:2007, y1:2021, conf:Verified, alt:[(dt:RWD)]),
   (n:"3.4 twin-turbo (3rd gen)", code:"V35A-FTS", d:3.4, c:6, a:Turbo, hp:389, hpr:5200, tq:479, tqr:2400, z:5.8, zs:Mag, w:5600, dt:FourWD, tx:"10AT", rl:6000, y0:2022, conf:Verified, alt:[(dt:RWD)]),
   (n:"i-FORCE MAX Hybrid", code:"V35A-FTS + e-motor", d:3.4, c:6, a:Hybrid, hp:437, hpr:5200, tq:583, tqr:2400, z:5.2, zs:Mag, w:6000, dt:FourWD, tx:"10AT", f:Hybrid, y0:2022, conf:Verified, alt:[(dt:RWD)]),

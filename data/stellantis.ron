@@ -71,7 +71,16 @@
  (make:"Dodge", model:"Intrepid", gen:"2nd gen", y0:1998, y1:2004, trims:[
   (n:"R/T 3.5 V6", code:"3.5 SOHC", d:3.5, c:6, a:NA, hp:242, hpr:6000, tq:248, tqr:4000, z:7.0, w:3500, dt:FWD, tx:"4AT", rl:6200),
  ]),
- (make:"Dodge", model:"Ram 1500 / SRT-10", gen:"(1994-2010)", y0:1994, y1:2010, trims:[
+  (make:"Dodge", model:"Ram 1500 / SRT-10", gen:"1st gen (1990-93)", y0:1990, y1:1993, trims:[
+  (n:"3.9 V6", code:"3.9 LA", d:3.9, c:6, a:NA, hp:180, hpr:4400, tq:220, tqr:2400, z:11.0, w:4000, dt:RWD, tx:"5MT/4AT", rl:4800, alt:[(dt:FourWD)]),
+  (n:"5.2 V8", code:"5.2 Magnum", d:5.2, c:8, a:NA, hp:230, hpr:4400, tq:280, tqr:2400, z:9.5, w:4200, dt:RWD, tx:"5MT/4AT", rl:4800, alt:[(dt:FourWD)]),
+  (n:"5.9 V8", code:"5.9 LA", d:5.9, c:8, a:NA, hp:230, hpr:4000, tq:325, tqr:3200, z:9.0, w:4300, dt:RWD, tx:"5MT/4AT", rl:4600, alt:[(dt:FourWD)]),
+ ]),
+(make:"Dodge", model:"Ram 1500 / SRT-10", gen:"(1994-2010)", y0:1994, y1:2010, trims:[
+  (n:"3.9 V6", code:"3.9 Magnum", d:3.9, c:6, a:NA, hp:175, hpr:4400, tq:230, tqr:3200, z:10.5, w:4200, dt:RWD, tx:"5MT/4AT", rl:4800, y1:2001, alt:[(dt:FourWD)]),
+  (n:"5.9 V8", code:"5.9 Magnum", d:5.9, c:8, a:NA, hp:245, hpr:4000, tq:335, tqr:3200, z:8.4, w:4600, dt:RWD, tx:"5MT/4AT", rl:4800, y1:2001, alt:[(dt:FourWD)]),
+  (n:"3.7 V6", code:"3.7 PowerTech", d:3.7, c:6, a:NA, hp:215, hpr:5200, tq:235, tqr:4000, z:9.8, w:4500, dt:RWD, tx:"6MT/4AT", rl:5800, y0:2002, alt:[(dt:FourWD)]),
+  (n:"4.7 V8", code:"4.7 PowerTech", d:4.7, c:8, a:NA, hp:235, hpr:4800, tq:295, tqr:3200, z:8.8, w:4700, dt:RWD, tx:"5MT/5AT", rl:5800, y0:2002, alt:[(dt:FourWD)]),
   (n:"5.2 Magnum V8", code:"5.2 Magnum", d:5.2, c:8, a:NA, hp:230, hpr:4400, tq:300, tqr:3200, z:9.0, w:4400, dt:RWD, tx:"5MT/4AT", rl:5200, y0:1994, y1:2001, alt:[(dt:FourWD)]),
   (n:"5.7 HEMI V8", code:"5.7 HEMI", d:5.7, c:8, a:NA, hp:345, hpr:5400, tq:375, tqr:4200, z:7.0, zs:Mag, w:5000, dt:FourWD, tx:"5AT", rl:5800, y0:2003, y1:2008, alt:[(dt:RWD)]),
   (n:"5.7 HEMI VVT (2009-10)", code:"5.7 HEMI VVT", d:5.7, c:8, a:NA, hp:390, hpr:5600, tq:407, tqr:4000, z:6.7, zs:Mag, w:5100, dt:FourWD, tx:"5AT", rl:6000, y0:2009, y1:2010, alt:[(dt:RWD)]),
@@ -81,6 +90,50 @@
   (n:"R/T 5.7 HEMI", code:"5.7 HEMI", d:5.7, c:8, a:NA, hp:360, hpr:5150, tq:390, tqr:4250, z:6.2, w:5000, dt:AWD, tx:"8AT", rl:6000, y0:2014, alt:[(dt:RWD)]),
   (n:"SRT 392 6.4 HEMI", code:"6.4 HEMI", d:6.4, c:8, a:NA, hp:475, hpr:6000, tq:470, tqr:4300, z:4.4, zs:Mag, w:5300, dt:AWD, tx:"8AT", rl:6400, y0:2018, conf:Verified),
   (n:"SRT Hellcat 6.2 SC", code:"6.2 Hellcat", d:6.2, c:8, a:Supercharged, hp:710, hpr:6000, tq:645, tqr:4800, z:3.5, zs:Mfr, w:5500, dt:AWD, tx:"8AT", rl:6200, y0:2021, y1:2023, conf:Verified),
+ ]),
+ (make:"Dodge", model:"Dakota", gen:"1st gen (1987-96)", y0:1990, y1:1996, trims:[
+  (n:"2.5 I4", code:"2.5 AMC", d:2.5, c:4, a:NA, hp:99, hpr:4500, tq:132, tqr:2500, z:14.0, w:3100, dt:RWD, tx:"5MT/3AT", rl:5000),
+  (n:"3.9 V6", code:"3.9 Magnum", d:3.9, c:6, a:NA, hp:180, hpr:4400, tq:225, tqr:3200, z:10.0, w:3400, dt:RWD, tx:"5MT/4AT", rl:5000, alt:[(dt:FourWD)]),
+  (n:"5.2 V8", code:"5.2 Magnum", d:5.2, c:8, a:NA, hp:220, hpr:4400, tq:295, tqr:3200, z:8.5, w:3600, dt:RWD, tx:"5MT/4AT", rl:5000, y0:1991, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Dodge", model:"Dakota", gen:"2nd gen (1997-2004)", y0:1997, y1:2004, trims:[
+  (n:"2.5 I4", code:"2.5 AMC", d:2.5, c:4, a:NA, hp:120, hpr:5200, tq:145, tqr:3250, z:12.5, w:3300, dt:RWD, tx:"5MT", rl:5200, y1:2002),
+  (n:"3.9 V6", code:"3.9 Magnum", d:3.9, c:6, a:NA, hp:175, hpr:4800, tq:225, tqr:3200, z:9.8, w:3600, dt:RWD, tx:"5MT/4AT", rl:5000, y1:2003, alt:[(dt:FourWD)]),
+  (n:"3.7 V6", code:"3.7 PowerTech", d:3.7, c:6, a:NA, hp:210, hpr:5200, tq:235, tqr:4000, z:9.2, w:3700, dt:RWD, tx:"6MT/4AT", rl:5800, y0:2004, alt:[(dt:FourWD)]),
+  (n:"5.2 V8", code:"5.2 Magnum", d:5.2, c:8, a:NA, hp:230, hpr:4400, tq:300, tqr:3200, z:8.3, w:3800, dt:RWD, tx:"5MT/4AT", rl:5000, y1:1999, alt:[(dt:FourWD)]),
+  (n:"4.7 V8", code:"4.7 PowerTech", d:4.7, c:8, a:NA, hp:235, hpr:4800, tq:295, tqr:3200, z:8.0, w:3800, dt:RWD, tx:"5MT/5AT", rl:5800, y0:2000, alt:[(dt:FourWD)]),
+  (n:"R/T 5.9 V8", code:"5.9 Magnum", d:5.9, c:8, a:NA, hp:250, hpr:4400, tq:345, tqr:3200, z:7.0, zs:Mag, w:3900, dt:RWD, tx:"4AT", rl:5000, y0:1998, y1:2003),
+ ]),
+ (make:"Dodge", model:"Dakota", gen:"3rd gen (2005-11)", y0:2005, y1:2011, trims:[
+  (n:"3.7 V6", code:"3.7 PowerTech", d:3.7, c:6, a:NA, hp:210, hpr:5200, tq:235, tqr:4000, z:9.0, w:4200, dt:RWD, tx:"6MT/4AT", rl:5800, alt:[(dt:FourWD)]),
+  (n:"4.7 V8", code:"4.7 PowerTech", d:4.7, c:8, a:NA, hp:230, hpr:4600, tq:290, tqr:3600, z:8.3, w:4300, dt:RWD, tx:"6MT/5AT", rl:5800, y1:2007, alt:[(dt:FourWD)]),
+  (n:"4.7 V8 (2008-11)", code:"4.7 PowerTech HO", d:4.7, c:8, a:NA, hp:302, hpr:5650, tq:329, tqr:3950, z:7.2, w:4400, dt:RWD, tx:"5AT", rl:6000, y0:2008, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Dodge", model:"Ram 2500 / 3500", gen:"1st gen (1990-93)", y0:1990, y1:1993, trims:[
+  (n:"5.9 V8", code:"5.9 LA", d:5.9, c:8, a:NA, hp:190, hpr:4000, tq:292, tqr:2400, z:11.5, w:5200, dt:RWD, tx:"5MT/4AT", rl:4600, alt:[(dt:FourWD)]),
+  (n:"5.9 Cummins", code:"5.9 Cummins 6BT", d:5.9, c:6, a:Turbo, hp:160, hpr:2500, tq:400, tqr:1700, z:14.0, w:5800, dt:RWD, tx:"5MT/4AT", rl:2700, f:Diesel, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Dodge", model:"Ram 2500 / 3500", gen:"2nd gen (1994-2002)", y0:1994, y1:2002, trims:[
+  (n:"5.9 V8", code:"5.9 Magnum", d:5.9, c:8, a:NA, hp:245, hpr:4000, tq:335, tqr:3200, z:10.0, w:5600, dt:RWD, tx:"5MT/4AT", rl:4800, alt:[(dt:FourWD)]),
+  (n:"8.0 V10", code:"8.0 V10", d:8.0, c:10, a:NA, hp:300, hpr:4000, tq:450, tqr:2800, z:8.8, w:5900, dt:RWD, tx:"5MT/4AT", rl:4600, alt:[(dt:FourWD)]),
+  (n:"5.9 Cummins 12-valve", code:"5.9 Cummins 12V", d:5.9, c:6, a:Turbo, hp:180, hpr:2500, tq:420, tqr:1600, z:12.5, w:6300, dt:FourWD, tx:"5MT/4AT", rl:2700, f:Diesel, y1:1998, alt:[(dt:RWD)]),
+  (n:"5.9 Cummins 24-valve", code:"5.9 Cummins 24V", d:5.9, c:6, a:Turbo, hp:235, hpr:2700, tq:460, tqr:1600, z:11.0, w:6400, dt:FourWD, tx:"6MT/4AT", rl:3000, f:Diesel, y0:1998, alt:[(dt:RWD)]),
+ ]),
+ (make:"Dodge", model:"Ram 2500 / 3500", gen:"3rd gen (2003-10)", y0:2003, y1:2010, trims:[
+  (n:"5.7 HEMI", code:"5.7 HEMI", d:5.7, c:8, a:NA, hp:345, hpr:5400, tq:375, tqr:4200, z:8.4, w:6000, dt:RWD, tx:"6MT/5AT", rl:5800, alt:[(dt:FourWD)]),
+  (n:"8.0 V10", code:"8.0 V10", d:8.0, c:10, a:NA, hp:305, hpr:4000, tq:440, tqr:2800, z:8.8, w:6300, dt:RWD, tx:"6MT/4AT", rl:4600, y1:2003, alt:[(dt:FourWD)]),
+  (n:"5.9 Cummins HO", code:"5.9 Cummins 24V HO", d:5.9, c:6, a:Turbo, hp:325, hpr:2900, tq:610, tqr:1600, z:9.0, zs:Mag, w:6900, dt:FourWD, tx:"6MT/4AT", rl:3200, f:Diesel, y1:2007, alt:[(dt:RWD)]),
+  (n:"6.7 Cummins", code:"6.7 Cummins", d:6.7, c:6, a:Turbo, hp:350, hpr:3000, tq:650, tqr:1500, z:8.6, zs:Mag, w:7000, dt:FourWD, tx:"6MT/6AT", rl:3200, f:Diesel, y0:2007, alt:[(dt:RWD)]),
+ ]),
+ (make:"Ram", model:"3500 Heavy Duty", gen:"4th/5th gen (2011-)", y0:2011, y1:2026, trims:[
+  (n:"5.7 HEMI", code:"5.7 HEMI", d:5.7, c:8, a:NA, hp:383, hpr:5600, tq:400, tqr:4000, z:8.5, w:6700, dt:RWD, tx:"6AT", rl:5800, y1:2013, alt:[(dt:FourWD)]),
+  (n:"6.4 HEMI", code:"6.4 HEMI", d:6.4, c:8, a:NA, hp:410, hpr:5600, tq:429, tqr:4000, z:7.6, w:7000, dt:RWD, tx:"6AT/8AT", rl:6000, y0:2014, alt:[(dt:FourWD)]),
+  (n:"6.7 Cummins", code:"6.7 Cummins", d:6.7, c:6, a:Turbo, hp:385, hpr:2800, tq:850, tqr:1700, z:8.2, w:7600, dt:FourWD, tx:"6AT", rl:3500, f:Diesel, y1:2018, alt:[(dt:RWD)]),
+  (n:"6.7 Cummins High Output", code:"6.7 Cummins HO", d:6.7, c:6, a:Turbo, hp:420, hpr:2800, tq:1075, tqr:1600, z:7.4, zs:Mag, w:7900, dt:FourWD, tx:"6AT", rl:3500, f:Diesel, y0:2019, alt:[(dt:RWD)]),
+ ]),
+ (make:"Jeep", model:"Comanche", gen:"MJ (1986-92)", y0:1990, y1:1992, trims:[
+  (n:"2.5 I4", code:"2.5 AMC", d:2.5, c:4, a:NA, hp:121, hpr:5250, tq:141, tqr:3250, z:12.5, w:3100, dt:RWD, tx:"5MT/3AT", rl:5200, alt:[(dt:FourWD)]),
+  (n:"4.0 I6", code:"4.0 PowerTech", d:4.0, c:6, a:NA, hp:190, hpr:4750, tq:225, tqr:4000, z:8.8, w:3300, dt:RWD, tx:"5MT/4AT", rl:5200, alt:[(dt:FourWD)]),
  ]),
  // ---------------- CHRYSLER ----------------
  (make:"Chrysler", model:"300", gen:"LX/LD (2005-23)", y0:2005, y1:2023, trims:[
@@ -136,8 +189,10 @@
   (n:"Hurricane 3.0 High Output", code:"Hurricane HO", d:3.0, c:6, a:Turbo, hp:540, hpr:5700, tq:521, tqr:3500, z:4.6, zs:Mfr, w:5600, dt:FourWD, tx:"8AT", rl:6000, y0:2025),
  ]),
  (make:"Ram", model:"2500 Heavy Duty", gen:"Cummins", y0:2011, y1:2026, trims:[
-  (n:"6.7 Cummins", code:"6.7 Cummins", d:6.7, c:6, a:Turbo, hp:385, hpr:2800, tq:850, tqr:1700, z:7.9, w:7000, dt:FourWD, tx:"6AT", f:Diesel, rl:3500, y0:2011, y1:2017, alt:[(dt:RWD)]),
-  (n:"6.7 Cummins High Output", code:"6.7 Cummins HO", d:6.7, c:6, a:Turbo, hp:420, hpr:2800, tq:1075, tqr:1600, z:7.2, w:7400, dt:FourWD, tx:"6AT", f:Diesel, rl:3500, y0:2019, alt:[(dt:RWD)]),
+  (n:"5.7 HEMI", code:"5.7 HEMI", d:5.7, c:8, a:NA, hp:383, hpr:5600, tq:400, tqr:4000, z:8.0, w:6300, dt:RWD, tx:"6AT", rl:5800, y0:2011, y1:2013, alt:[(dt:FourWD)]),
+  (n:"Power Wagon 6.4 HEMI", code:"6.4 HEMI", d:6.4, c:8, a:NA, hp:410, hpr:5600, tq:429, tqr:4000, z:7.5, zs:Mag, w:7000, dt:FourWD, tx:"6AT/8AT", rl:6000, y0:2014),
+  (n:"6.7 Cummins (2019+)", code:"6.7 Cummins", d:6.7, c:6, a:Turbo, hp:370, hpr:2800, tq:850, tqr:1700, z:8.0, w:7200, dt:FourWD, tx:"6AT", f:Diesel, rl:3500, y0:2019, alt:[(dt:RWD)]),
+  (n:"6.7 Cummins", code:"6.7 Cummins", d:6.7, c:6, a:Turbo, hp:385, hpr:2800, tq:850, tqr:1700, z:7.9, w:7000, dt:FourWD, tx:"6AT", f:Diesel, rl:3500, y0:2011, y1:2018, alt:[(dt:RWD)]),
   (n:"6.4 HEMI", code:"6.4 HEMI", d:6.4, c:8, a:NA, hp:410, hpr:5600, tq:429, tqr:4000, z:7.4, w:6600, dt:FourWD, tx:"6AT/8AT", rl:6000, y0:2014, alt:[(dt:RWD)]),
  ]),
  // ---------------- EAGLE ----------------

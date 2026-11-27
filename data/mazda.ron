@@ -1,0 +1,15 @@
+#![enable(implicit_some)]
+(group:"Mazda", gens:[
+ (make:"Mazda", model:"B-Series", gen:"B2200/B2600i (1986-93)", y0:1990, y1:1993, trims:[
+  (n:"B2200 2.2 I4", code:"F2", d:2.2, c:4, a:NA, hp:85, hpr:4500, tq:118, tqr:2500, z:15.0, w:2700, dt:RWD, tx:"5MT/3AT", rl:5000),
+  (n:"B2600i 2.6 I4", code:"G6", d:2.6, c:4, a:NA, hp:121, hpr:4600, tq:149, tqr:3500, z:12.0, w:3000, dt:RWD, tx:"5MT/4AT", rl:5000, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Mazda", model:"B-Series", gen:"B-Series (1994-2009)", y0:1994, y1:2009, trims:[
+  (n:"B2300 2.3 I4", code:"2.3 Lima", d:2.3, c:4, a:NA, hp:112, hpr:4800, tq:135, tqr:2400, z:12.5, w:3000, dt:RWD, tx:"5MT/4AT", rl:5000, y1:1997),
+  (n:"B2500 2.5 I4", code:"2.5 Lima", d:2.5, c:4, a:NA, hp:119, hpr:5000, tq:146, tqr:3000, z:12.0, w:3050, dt:RWD, tx:"5MT/4AT", rl:5000, y0:1998, y1:2001),
+  (n:"B2300 2.3 Duratec", code:"2.3 Duratec", d:2.3, c:4, a:NA, hp:143, hpr:5250, tq:154, tqr:3750, z:10.5, w:3100, dt:RWD, tx:"5MT/5AT", rl:6000, y0:2002),
+  (n:"B3000 3.0 V6", code:"3.0 Vulcan", d:3.0, c:6, a:NA, hp:150, hpr:4750, tq:185, tqr:3750, z:10.0, w:3350, dt:RWD, tx:"5MT/4AT/5AT", rl:5200, y1:2008, alt:[(dt:FourWD)]),
+  (n:"B4000 4.0 V6", code:"4.0 Cologne", d:4.0, c:6, a:NA, hp:160, hpr:4200, tq:225, tqr:2800, z:9.0, w:3550, dt:FourWD, tx:"5MT/5AT", rl:5000, y1:2000, alt:[(dt:RWD)]),
+  (n:"B4000 4.0 SOHC V6", code:"4.0 Cologne SOHC", d:4.0, c:6, a:NA, hp:207, hpr:5250, tq:238, tqr:3000, z:8.0, w:3550, dt:FourWD, tx:"5MT/5AT", rl:5800, y0:2001, alt:[(dt:RWD)]),
+ ]),
+])

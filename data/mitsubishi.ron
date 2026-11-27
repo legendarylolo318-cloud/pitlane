@@ -1,0 +1,12 @@
+#![enable(implicit_some)]
+(group:"Mitsubishi", gens:[
+ (make:"Mitsubishi", model:"Mighty Max", gen:"2nd gen (1987-96)", y0:1990, y1:1996, trims:[
+  (n:"2.0 I4", code:"4G63", d:2.0, c:4, a:NA, hp:90, hpr:5000, tq:109, tqr:3000, z:15.0, w:2700, dt:RWD, tx:"5MT", rl:5500, y1:1992),
+  (n:"2.4 I4", code:"4G64", d:2.4, c:4, a:NA, hp:116, hpr:5000, tq:136, tqr:3500, z:12.5, w:2850, dt:RWD, tx:"5MT/4AT", rl:5500, alt:[(dt:FourWD)]),
+  (n:"3.0 V6", code:"6G72", d:3.0, c:6, a:NA, hp:143, hpr:5000, tq:168, tqr:2500, z:10.5, w:3200, dt:RWD, tx:"5MT/4AT", rl:5500, y1:1994, alt:[(dt:FourWD)]),
+ ]),
+ (make:"Mitsubishi", model:"Raider", gen:"1st gen", y0:2006, y1:2009, trims:[
+  (n:"3.7 V6", code:"3.7 PowerTech", d:3.7, c:6, a:NA, hp:210, hpr:5200, tq:235, tqr:4000, z:9.2, w:4200, dt:RWD, tx:"6MT/4AT", rl:5800, alt:[(dt:FourWD)]),
+  (n:"4.7 V8", code:"4.7 PowerTech", d:4.7, c:8, a:NA, hp:230, hpr:4600, tq:290, tqr:3600, z:8.3, w:4300, dt:RWD, tx:"5AT", rl:5800, alt:[(dt:FourWD)]),
+ ]),
+])
