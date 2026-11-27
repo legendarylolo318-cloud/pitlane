@@ -101,7 +101,8 @@ jobs:
           export CARGO_APK_RELEASE_KEYSTORE="$RUNNER_TEMP/release.keystore"
           export CARGO_APK_RELEASE_KEYSTORE_PASSWORD="$KS_PASS"
           cargo apk build --release -p pitlane-app --lib --no-default-features --features renderer-femtovg
-          cp target/release/apk/*.apk Pitlane-android-arm64.apk
+          ls -l target/release/apk/
+          cp target/release/apk/Pitlane.apk Pitlane-android-arm64.apk
           ls -l Pitlane-android-arm64.apk
       - uses: actions/upload-artifact@v4
         with: { name: android, path: Pitlane-android-arm64.apk, if-no-files-found: error }
