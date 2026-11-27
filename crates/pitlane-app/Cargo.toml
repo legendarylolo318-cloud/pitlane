@@ -51,6 +51,15 @@ target_sdk_version = 34
 [package.metadata.android.application]
 label = "Pitlane"
 
+# Handle rotation / keyboard / dark-mode changes in place instead of restarting the activity.
+[package.metadata.android.application.activity]
+config_changes = "orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density"
+orientation = "unspecified"
+
 [[example]]
 name = "snap"
+required-features = ["renderer-software"]
+
+[[test]]
+name = "ui"
 required-features = ["renderer-software"]

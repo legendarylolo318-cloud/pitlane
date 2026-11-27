@@ -1,7 +1,10 @@
 name: release
+# Tag push (v*) builds everything and publishes a GitHub Release.
+# Manual runs (workflow_dispatch) build the same artifacts without publishing.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 permissions:
   contents: write
 env:
@@ -35,11 +38,12 @@ jobs:
           cp crates/pitlane-app/assets/icon.png AppDir/pitlane.png
           cp crates/pitlane-app/assets/icon.png AppDir/usr/share/icons/hicolor/64x64/apps/pitlane.png
           ln -sf usr/bin/pitlane AppDir/AppRun
-          curl -L -o appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          curl -fsSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool
           ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir Pitlane-x86_64.AppImage
+          ls -l Pitlane-x86_64.AppImage target/release/pitlane
       - uses: actions/upload-artifact@v4
-        with: { name: linux, path: Pitlane-x86_64.AppImage }
+        with: { name: linux, path: Pitlane-x86_64.AppImage, if-no-files-found: error }
 
   windows:
     needs: test
@@ -51,34 +55,62 @@ jobs:
       - run: cargo build --release -p pitlane-app --bin pitlane --target x86_64-pc-windows-msvc
       - run: Copy-Item target/x86_64-pc-windows-msvc/release/pitlane.exe Pitlane-x86_64-windows.exe
       - uses: actions/upload-artifact@v4
-        with: { name: windows, path: Pitlane-x86_64-windows.exe }
+        with: { name: windows, path: Pitlane-x86_64-windows.exe, if-no-files-found: error }
 
   android:
     needs: test
     runs-on: ubuntu-22.04
+    env:
+      NDK_VERSION: 26.1.10909125
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: aarch64-linux-android }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
       - uses: android-actions/setup-android@v3
-      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125"
+      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;${NDK_VERSION}"
       - run: cargo install cargo-apk --locked
-      - name: Build APK
+      - name: Release keystore
+        # Use the ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD secrets when present (stable signing
+        # key, so installed apps can update in place). Otherwise sign with a throwaway key.
         env:
-          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
-        run: cargo apk build --release -p pitlane-app --lib --no-default-features --features renderer-software
-      - run: cp target/release/apk/*.apk Pitlane-android.apk
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "KS_PASS=$KS_PASS" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No ANDROID_KEYSTORE_B64 secret: signing with a throwaway key"
+            KS_PASS=$(openssl rand -hex 16)
+            keytool -genkeypair -v -keystore "$RUNNER_TEMP/release.keystore" -storepass "$KS_PASS" -keypass "$KS_PASS" \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Pitlane"
+            echo "::add-mask::$KS_PASS"
+            echo "KS_PASS=$KS_PASS" >> "$GITHUB_ENV"
+          fi
+      - name: Build APK (GPU renderer)
+        run: |
+          export ANDROID_NDK_ROOT="$ANDROID_HOME/ndk/$NDK_VERSION"
+          export ANDROID_NDK_HOME="$ANDROID_NDK_ROOT"
+          export CARGO_APK_RELEASE_KEYSTORE="$RUNNER_TEMP/release.keystore"
+          export CARGO_APK_RELEASE_KEYSTORE_PASSWORD="$KS_PASS"
+          cargo apk build --release -p pitlane-app --lib --no-default-features --features renderer-femtovg
+          cp target/release/apk/*.apk Pitlane-android-arm64.apk
+          ls -l Pitlane-android-arm64.apk
       - uses: actions/upload-artifact@v4
-        with: { name: android, path: Pitlane-android.apk }
+        with: { name: android, path: Pitlane-android-arm64.apk, if-no-files-found: error }
 
   release:
     needs: [linux, windows, android]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4
         with: { path: dist, merge-multiple: true }
+      - run: ls -l dist
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           generate_release_notes: true
+          fail_on_unmatched_files: true

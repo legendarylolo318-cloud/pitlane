@@ -2,7 +2,7 @@
 
 All car data lives in this directory as [RON](https://github.com/ron-rs/ron) text. `crates/pitlane-core/build.rs`
 parses every `*.ron` file here at build time, **validates** it (a bad row fails the build), expands it, and writes
-two compact `bincode` blobs into `OUT_DIR` that are embedded with `include_bytes!`. No network or file access is needed at run time.
+two compact blobs into `OUT_DIR` (`cars.bin`, an interned fixed-record table, and `mods.bin`, bincode) that are embedded with `include_bytes!`. No network or file access is needed at run time.
 
 | File | Contents |
 |------|----------|
@@ -10,9 +10,10 @@ two compact `bincode` blobs into `OUT_DIR` that are embedded with `include_bytes
 | `mods.ron` | mod definitions (see below) |
 
 ## Run-time loading
-`cars.bin` has a small header (make name, parent group, a 37-bit "years present" mask, offset, length) followed by one
-`bincode` block per make. The header is parsed in place (borrowing the embedded bytes); a make's block is only
-decoded the first time that make is needed (`Db::cars_of_make`, `trims_for`, ...). Search decodes every make on first use.
+`build.rs` writes `cars.bin`, a string-interned table of fixed-size car records (layout documented on `CARS_MAGIC` in
+`crates/pitlane-core/src/model.rs`). It is embedded with `include_bytes!` and read in place. Text fields borrow from the
+binary (`Cow<'static, str>`), so no `String` is allocated per field. A make's cars are decoded the first time that make is
+needed (`Db::cars_of_make`, `trims_for`, ...). Search builds a small normalized index on first use and reuses it.
 
 ## Car record format
 Each file is `(group: "...", gens: [ Gen, ... ])`. A `Gen` is a generation of one model; each `Trim` inside it is one
@@ -60,14 +61,18 @@ The unique `id` is generated: `make-model-generation-trim` (slugified). Duplicat
 * required text fields non-empty, at least one transmission
 * hp 40-1500, torque 40-1500, weight 1500-10000 lb, 0-60 1.5-20 s, displacement 0.6-9.0 L, 2-12 cylinders (EVs: 0/0)
 * no duplicate ids; every required brand present; every make listed for a year has models for that year
+* no trim name listed twice for the same make/model/year, and no two identical cars under different names
+* reference cars match published figures (`reference_cars_match_published_figures`)
 
 ## User overrides
 The app can edit any stat or add a custom car. Edits are stored in `overrides.ron` in the app's private data directory:
 
 ```ron
-(cars: [ ( id: "ford-mustang-s550-2015-2023-gt-5-0", make: "Ford", ... ) ])
+(cars: [ ( id: "ford-mustang-s550-2015-2023-gt-5-0-2018", make: "Ford", ..., transmission: "6MT/10AT", ... ) ])
 ```
-A car whose `id` matches a bundled car replaces it; any other `id` is added (new makes appear automatically).
+A car whose `id` matches a bundled car replaces it; any other `id` is added (new makes appear automatically). An override
+keeps the bundled car's make, model and years (the app enforces this); change those by adding a custom car instead. If an id
+appears twice in an import, the last one wins.
 The in-app Import/Export screen copies/pastes this text. Overrides are validated with the same rules as the bundled data.
 
 ## Mods (`mods.ron`)
@@ -88,5 +93,8 @@ whose `requires` mods are all selected is used. All numbers are data:
 | `note` | warning shown when the effect is used |
 | `conflicts` (on the mod) | mods that cannot be combined (the later-defined one is ignored with a warning) |
 
-Mods are applied in file order (hardware first, conditions last), compounding multiplicatively, so stacking has diminishing returns.
+Mods are applied in file order (hardware first, conditions last). Percentage effects compound on the running engine power, so
+stacking has diminishing returns. Flat effects (nitrous shot, custom +/- hp) are added at the end and are never scaled by other
+mods' percentages. A mod that is ignored (wrong fuel, wrong aspiration, losing a conflict) never satisfies another mod's
+`requires`.
 All gain percentages are rough, typical bolt-on figures, **not** measurements of any specific car.
